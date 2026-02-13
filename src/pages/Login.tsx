@@ -1,77 +1,141 @@
-
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Building2, ArrowRight } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
-import { useState } from "react"
-import { useAuth } from "@/contexts/AuthContext"
-import { toast } from "sonner"
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
+import { AuthBackground } from "@/components/AuthBackground";
+import { Logo } from "@/components/Logo";
 
 const Login = () => {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const { signIn } = useAuth()
-  const navigate = useNavigate()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, selectedUIRole } = useAuth();
+  const navigate = useNavigate();
+
+  const isViajante = selectedUIRole === "viajante";
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
     try {
-      await signIn(email, password)
-      navigate("/dashboard")
+      await signIn(email, password);
+      navigate("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Login failed")
+      toast.error(error.message || "Falha ao fazer login");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen bg-muted/50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center space-y-2">
-          <div className="flex items-center justify-center gap-2 text-primary">
-            <Building2 className="w-8 h-8" />
-            <span className="font-bold text-2xl">TravelConnect</span>
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-          <p className="text-muted-foreground">Sign in to your account to continue</p>
+    <AuthBackground>
+      <div className="w-full max-w-[480px] flex flex-col items-center">
+        {/* Logo */}
+        <div className="mb-6">
+          <Logo size="lg" />
         </div>
 
-        <Card className="border-border/50 shadow-lg">
-          <CardHeader>
-            <CardTitle>Sign In</CardTitle>
-            <CardDescription>Enter your email below to login to your account</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" placeholder="m@example.com" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-              </div>
-              <Button className="w-full" type="submit" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"} <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <p className="text-center text-sm text-muted-foreground">
-          Don't have an account?{" "}
-          <Link to="/register" className="text-primary hover:underline font-medium">
-            Register your company
-          </Link>
+        {/* Title */}
+        <h1 className="text-[2rem] font-bold text-navy-900 mb-2">Login</h1>
+        <p className="text-[#6B7280] text-base mb-8">
+          Preencha os campos abaixo para acessar a plataforma!
         </p>
-      </div>
-    </div>
-  )
-}
 
-export default Login
+        {/* Form Card */}
+        <div className="w-full bg-white rounded-2xl shadow-sm px-8 py-8">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-navy-800 mb-1.5"
+              >
+                E-mail
+              </label>
+              <input
+                id="email"
+                type="email"
+                placeholder="e-mail@exemplo.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-lg text-sm text-navy-800 placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-navy-300 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            {/* Password */}
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-navy-800 mb-1.5"
+              >
+                Senha
+              </label>
+              <input
+                id="password"
+                type="password"
+                placeholder="******"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full px-4 py-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-lg text-sm text-navy-800 placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-navy-300 focus:border-transparent transition-colors"
+              />
+            </div>
+
+            {/* Forgot password */}
+            <div>
+              <Link
+                to="#"
+                className={`text-sm font-medium ${
+                  isViajante
+                    ? "text-rose-500 hover:text-rose-600"
+                    : "text-navy-500 hover:text-navy-600"
+                } hover:underline`}
+              >
+                Esqueceu sua senha?
+              </Link>
+            </div>
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full py-3.5 rounded-lg text-white font-semibold text-base transition-colors disabled:opacity-50 ${
+                isViajante
+                  ? "bg-rose-500 hover:bg-rose-600"
+                  : "bg-navy-500 hover:bg-navy-600"
+              }`}
+            >
+              {isLoading ? "Entrando..." : "Entrar"}
+            </button>
+
+            {/* Register link */}
+            <p className="text-center text-sm text-[#6B7280]">
+              Não possui conta?{" "}
+              <Link
+                to="/register"
+                className={`font-semibold hover:underline ${
+                  isViajante
+                    ? "text-rose-500 hover:text-rose-600"
+                    : "text-navy-500 hover:text-navy-600"
+                }`}
+              >
+                Cadastre-se
+              </Link>
+            </p>
+
+            {/* Back link */}
+            <Link
+              to="/"
+              className="block text-center text-sm text-[#6B7280] hover:text-navy-600 hover:underline transition-colors"
+            >
+              Voltar para a Tela Inicial
+            </Link>
+          </form>
+        </div>
+      </div>
+    </AuthBackground>
+  );
+};
+
+export default Login;

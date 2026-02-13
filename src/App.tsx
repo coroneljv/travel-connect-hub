@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
+import Index from "./pages/Index";
+import SelectRole from "./pages/SelectRole";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
@@ -25,15 +26,23 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Public auth flow */}
+            <Route path="/" element={<Index />} />
+            <Route path="/select-role" element={<SelectRole />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
+            {/* Protected app routes */}
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/opportunities" element={<Opportunities />} />
               <Route path="/requests/new" element={<CreateRequest />} />
-              <Route path="/requests" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/applications" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/academy" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/reviews" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/community" element={<Navigate to="/dashboard" replace />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/requests" element={<Navigate to="/dashboard" replace />} />
               <Route path="/messages" element={<Navigate to="/dashboard" replace />} />
               <Route path="/settings" element={<Navigate to="/dashboard" replace />} />
             </Route>

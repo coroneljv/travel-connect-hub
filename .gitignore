@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment files
+.env.local
+.env.*.local
+
+# Scripts with secrets
+scripts/create-test-users.mjs
