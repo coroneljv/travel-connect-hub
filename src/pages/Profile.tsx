@@ -6,9 +6,80 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Building2, Globe, Mail, MapPin, Phone, Upload } from "lucide-react"
+import { Globe, Mail, MapPin, Phone } from "lucide-react"
+import { useAuth } from "@/contexts/AuthContext"
+import { supabase } from "@/integrations/supabase/client"
+import { useState, useEffect } from "react"
+import { toast } from "sonner"
 
 const Profile = () => {
+  const { organization, profile, userRole } = useAuth()
+  const [orgName, setOrgName] = useState("")
+  const [orgCountry, setOrgCountry] = useState("")
+  const [orgDescription, setOrgDescription] = useState("")
+  const [orgWebsite, setOrgWebsite] = useState("")
+  const [orgEmail, setOrgEmail] = useState("")
+  const [orgPhone, setOrgPhone] = useState("")
+  const [orgTaxId, setOrgTaxId] = useState("")
+  const [fullName, setFullName] = useState("")
+  const [position, setPosition] = useState("")
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (organization) {
+      setOrgName(organization.name ?? "")
+      setOrgCountry((organization as any).country ?? "")
+      setOrgDescription((organization as any).description ?? "")
+      setOrgWebsite((organization as any).website ?? "")
+      setOrgEmail((organization as any).email ?? "")
+      setOrgPhone((organization as any).phone ?? "")
+      setOrgTaxId((organization as any).tax_id ?? "")
+    }
+    if (profile) {
+      setFullName(profile.full_name ?? "")
+      setPosition(profile.position ?? "")
+    }
+  }, [organization, profile])
+
+  const handleSave = async () => {
+    setSaving(true)
+    try {
+      if (organization?.id) {
+        const { error: orgErr } = await supabase
+          .from("organizations")
+          .update({
+            name: orgName,
+            country: orgCountry,
+            description: orgDescription,
+            website: orgWebsite,
+            email: orgEmail,
+            phone: orgPhone,
+            tax_id: orgTaxId,
+          })
+          .eq("id", organization.id)
+        if (orgErr) throw orgErr
+      }
+
+      if (profile?.id) {
+        const { error: profErr } = await supabase
+          .from("profiles")
+          .update({ full_name: fullName, position })
+          .eq("id", profile.id)
+        if (profErr) throw profErr
+      }
+
+      toast.success("Profile updated!")
+    } catch (error: any) {
+      toast.error(error.message || "Failed to save")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const initials = fullName
+    ? fullName.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+    : "?"
+
   return (
     <div className="space-y-8">
       <div>
@@ -19,8 +90,7 @@ const Profile = () => {
       <Tabs defaultValue="general" className="space-y-4">
         <TabsList>
           <TabsTrigger value="general">General Info</TabsTrigger>
-          <TabsTrigger value="services">Services & Regions</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="personal">My Profile</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -32,140 +102,88 @@ const Profile = () => {
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6 pb-6 border-b">
                 <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
-                  DA
+                  {initials}
                 </div>
-                <Button variant="outline">Change Logo</Button>
+                <div>
+                  <p className="font-medium">{orgName || "Your Company"}</p>
+                  <Badge variant="outline" className="mt-1 capitalize">{userRole ?? "—"}</Badge>
+                </div>
               </div>
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Company Name</Label>
-                  <Input id="name" defaultValue="Demo Agency Ltd." />
+                  <Label>Company Name</Label>
+                  <Input value={orgName} onChange={(e) => setOrgName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="tax-id">Tax ID / Registration</Label>
-                  <Input id="tax-id" defaultValue="US-123456789" />
+                  <Label>Tax ID</Label>
+                  <Input value={orgTaxId} onChange={(e) => setOrgTaxId(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="website">Website</Label>
-                  <div className="relative">
-                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input id="website" className="pl-9" defaultValue="www.demo-agency.com" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Contact Email</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input id="email" className="pl-9" defaultValue="contact@demo-agency.com" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input id="phone" className="pl-9" defaultValue="+1 (555) 000-0000" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="address">Address</Label>
+                  <Label>Country</Label>
                   <div className="relative">
                     <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input id="address" className="pl-9" defaultValue="123 Business Ave, New York, NY" />
+                    <Input className="pl-9" value={orgCountry} onChange={(e) => setOrgCountry(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Website</Label>
+                  <div className="relative">
+                    <Globe className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input className="pl-9" value={orgWebsite} onChange={(e) => setOrgWebsite(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input className="pl-9" value={orgEmail} onChange={(e) => setOrgEmail(e.target.value)} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Phone</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input className="pl-9" value={orgPhone} onChange={(e) => setOrgPhone(e.target.value)} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="bio">About Us</Label>
-                <Textarea id="bio" className="min-h-[100px]" defaultValue="We are a leading travel agency specializing in corporate travel management and events." />
+                <Label>Description</Label>
+                <Textarea className="min-h-[100px]" value={orgDescription} onChange={(e) => setOrgDescription(e.target.value)} />
               </div>
 
               <div className="flex justify-end">
-                <Button>Save Changes</Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="services">
+        <TabsContent value="personal">
           <Card>
             <CardHeader>
-              <CardTitle>Services & Coverage</CardTitle>
-              <CardDescription>Define what you offer and where you operate.</CardDescription>
+              <CardTitle>Personal Information</CardTitle>
+              <CardDescription>Your individual profile details.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <Label>Service Categories</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["Corporate Travel", "MICE", "Leisure", "VIP Services", "Flights", "Hotels"].map((tag) => (
-                    <Badge key={tag} variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-                      {tag} ×
-                    </Badge>
-                  ))}
-                  <Badge variant="outline" className="cursor-pointer border-dashed">
-                    + Add Category
-                  </Badge>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label>Full Name</Label>
+                  <Input value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Position</Label>
+                  <Input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="e.g. Travel Manager" />
                 </div>
               </div>
-
-              <div className="space-y-4">
-                <Label>Regions Served</Label>
-                <div className="flex flex-wrap gap-2">
-                  {["North America", "Western Europe", "Southeast Asia"].map((region) => (
-                    <Badge key={region} variant="outline" className="cursor-pointer hover:bg-muted">
-                      {region} ×
-                    </Badge>
-                  ))}
-                  <Badge variant="outline" className="cursor-pointer border-dashed">
-                    + Add Region
-                  </Badge>
-                </div>
-              </div>
-
               <div className="flex justify-end">
-                <Button>Save Changes</Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Legal Documents</CardTitle>
-              <CardDescription>Upload necessary documentation for verification.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="border rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-muted rounded">
-                    <Building2 className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Business License</p>
-                    <p className="text-sm text-muted-foreground">Verified on Jan 15, 2024</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50/50">Verified</Badge>
-              </div>
-
-              <div className="border rounded-lg p-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="p-2 bg-muted rounded">
-                    <Building2 className="h-6 w-6 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="font-medium">Insurance Policy</p>
-                    <p className="text-sm text-muted-foreground">Expires Dec 2024</p>
-                  </div>
-                </div>
-                <Badge variant="outline" className="text-green-600 border-green-200 bg-green-50/50">Verified</Badge>
-              </div>
-
-              <div className="border-2 border-dashed rounded-lg p-6 flex flex-col items-center justify-center text-center cursor-pointer hover:bg-muted/50 transition-colors">
-                <Upload className="h-8 w-8 text-muted-foreground mb-2" />
-                <p className="text-sm font-medium">Upload new document</p>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </Button>
               </div>
             </CardContent>
           </Card>
