@@ -1,25 +1,88 @@
+import { useState } from "react";
+import {
+  Globe,
+  SmilePlus,
+  Briefcase,
+  Heart,
+  Search,
+  SlidersHorizontal,
+  Sparkles,
+} from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import OpportunityCard from "./opportunities/OpportunityCard";
+import OpportunityFilters from "./opportunities/OpportunityFilters";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Filter, Search, MapPin, Calendar, Building } from "lucide-react"
-import { Input } from "@/components/ui/input"
-import { supabase } from "@/integrations/supabase/client"
-import { useQuery } from "@tanstack/react-query"
-import { useAuth } from "@/contexts/AuthContext"
-import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { toast } from "sonner"
+// TODO: mock enrichments — substituir por dados reais do DB
+const MOCK_IMAGES = [
+  "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1545389336-cf090694435e?w=600&h=400&fit=crop",
+];
+
+// TODO: substituir por coluna requests.category quando existir
+const MOCK_CATEGORY: Record<number, "volunteer" | "exchange"> = {
+  0: "volunteer", // Recepcionista
+  1: "volunteer", // Auxiliar Cozinha
+  2: "exchange",  // Guia Turismo
+  3: "exchange",  // Social Media
+  4: "volunteer", // Professor Yoga
+};
+
+const MOCK_TAGS_MAP: Record<number, string[]> = {
+  0: ["Recepcao", "Comunicacao", "Ingles"],
+  1: ["Cozinha", "Sustentabilidade"],
+  2: ["Turismo", "Surf", "Ingles"],
+  3: ["Marketing Digital", "Fotografia"],
+  4: ["Yoga", "Meditacao", "Ingles"],
+};
+const MOCK_MATCH = [95, 92, 90, 88, 85];
+const MOCK_RATING = [4.9, 4.8, 4.7, 4.5, 4.8];
+const MOCK_DURATION = ["1 mes", "3 meses", "3 meses", "3 meses", "2 meses"];
+const MOCK_COMPENSATION = [
+  "Hospedagem + Refeicao",
+  "Hospedagem + Refeicao",
+  "Hospedagem + Cafe",
+  "Hospedagem",
+  "Hospedagem + Refeicao completa",
+];
+
+const TABS = [
+  { key: "all", label: "Oportunidades", icon: Globe },
+  { key: "volunteer", label: "Voluntariado", icon: SmilePlus },
+  { key: "exchange", label: "Intercambio", icon: Briefcase },
+  { key: "favorites", label: "Favoritos", icon: Heart },
+] as const;
+
+// TODO: persistir favoritos no DB ou localStorage
+const SECTION_TITLES: Record<string, { title: string; subtitle: string }> = {
+  all: {
+    title: "Recomendados para Voce",
+    subtitle: "Oportunidades com maior compatibilidade com seu perfil",
+  },
+  volunteer: {
+    title: "Voluntariado",
+    subtitle: "Oportunidades de trabalho voluntario em troca de hospedagem",
+  },
+  exchange: {
+    title: "Intercambio",
+    subtitle: "Programas de intercambio cultural e profissional",
+  },
+  favorites: {
+    title: "Seus Favoritos",
+    subtitle: "Oportunidades que voce salvou",
+  },
+};
 
 const Opportunities = () => {
-  const { userRole, organization, user } = useAuth()
-  const [search, setSearch] = useState("")
-  const [selectedRequest, setSelectedRequest] = useState<any>(null)
-  const [proposalMessage, setProposalMessage] = useState("")
-  const [priceEstimate, setPriceEstimate] = useState("")
-  const [submitting, setSubmitting] = useState(false)
+  const [search, setSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+  const [showFilters, setShowFilters] = useState(false);
+  // TODO: persistir favoritos no DB
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
 
   const { data: opportunities = [], isLoading } = useQuery({
     queryKey: ["opportunities", search],
@@ -28,141 +91,159 @@ const Opportunities = () => {
         .from("requests")
         .select("*, organizations!requests_organization_id_fkey(name)")
         .eq("status", "open")
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false });
 
       if (search) {
-        query = query.or(`title.ilike.%${search}%,destination.ilike.%${search}%`)
+        query = query.or(
+          `title.ilike.%${search}%,destination.ilike.%${search}%`
+        );
       }
 
-      const { data, error } = await query
-      if (error) throw error
-      return data ?? []
+      const { data, error } = await query;
+      if (error) throw error;
+      return data ?? [];
     },
-  })
+  });
 
-  const handleSubmitProposal = async () => {
-    if (!selectedRequest || !organization?.id || !user?.id) return
-    setSubmitting(true)
-    try {
-      const { error } = await supabase.from("proposals").insert({
-        request_id: selectedRequest.id,
-        supplier_org_id: organization.id,
-        supplier_profile_id: user.id,
-        message: proposalMessage,
-        price_estimate: priceEstimate ? Number(priceEstimate) : null,
-      })
-      if (error) throw error
-      toast.success("Proposal submitted!")
-      setSelectedRequest(null)
-      setProposalMessage("")
-      setPriceEstimate("")
-    } catch (error: any) {
-      toast.error(error.message || "Failed to submit proposal")
-    } finally {
-      setSubmitting(false)
-    }
-  }
+  const toggleFavorite = (id: string) => {
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
-  const formatBudget = (min: number | null, max: number | null) => {
-    if (!min && !max) return "Not specified"
-    if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`
-    if (min) return `From $${min.toLocaleString()}`
-    return `Up to $${max!.toLocaleString()}`
-  }
+  // Filter opportunities by active tab
+  const filtered = opportunities.filter((_opp: any, i: number) => {
+    if (activeTab === "all") return true;
+    if (activeTab === "favorites") return favoriteIds.has(_opp.id);
+    return MOCK_CATEGORY[i % 5] === activeTab;
+  });
+
+  const section = SECTION_TITLES[activeTab] ?? SECTION_TITLES.all;
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Marketplace</h1>
-          <p className="text-muted-foreground mt-2">Find and respond to travel opportunities.</p>
-        </div>
+    <div className="space-y-4">
+      {/* Category Tabs */}
+      <div className="flex rounded-pill overflow-hidden border border-rose-500">
+        {TABS.map((tab) => {
+          const isActive = activeTab === tab.key;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex-1 flex items-center justify-center gap-2.5 py-2.5 px-4 text-lg transition-colors ${
+                isActive
+                  ? "bg-rose-500 text-white"
+                  : "bg-white text-tc-text-placeholder hover:bg-muted"
+              }`}
+            >
+              <Icon className="h-[18px] w-[18px]" />
+              {tab.label}
+            </button>
+          );
+        })}
       </div>
 
-      <div className="flex gap-4 items-center bg-card p-4 rounded-lg border shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search opportunities..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
-      ) : opportunities.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            No open opportunities found.
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="grid gap-6">
-          {opportunities.map((opp: any) => (
-            <Card key={opp.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="flex flex-row items-start justify-between pb-2">
-                <div className="space-y-1">
-                  <CardTitle className="text-xl">{opp.title}</CardTitle>
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" /> {opp.destination}
-                    </span>
-                    {opp.start_date && (
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" /> {new Date(opp.start_date).toLocaleDateString()}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Building className="h-3 w-3" /> {opp.organizations?.name ?? "Unknown"}
-                    </span>
-                  </div>
-                </div>
-                <Badge variant="secondary">{opp.status}</Badge>
-              </CardHeader>
-              <CardContent>
-                {opp.description && (
-                  <p className="text-sm text-muted-foreground mb-4">{opp.description}</p>
-                )}
-                <div className="flex items-center justify-between">
-                  <span className="font-semibold text-lg">{formatBudget(opp.budget_min, opp.budget_max)}</span>
-                  {userRole === "supplier" && (
-                    <Button onClick={() => setSelectedRequest(opp)}>Submit Proposal</Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <Dialog open={!!selectedRequest} onOpenChange={() => setSelectedRequest(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Submit Proposal</DialogTitle>
-            <DialogDescription>For: {selectedRequest?.title}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Price Estimate ($)</Label>
-              <Input type="number" value={priceEstimate} onChange={(e) => setPriceEstimate(e.target.value)} placeholder="e.g. 25000" />
-            </div>
-            <div className="space-y-2">
-              <Label>Message</Label>
-              <Textarea value={proposalMessage} onChange={(e) => setProposalMessage(e.target.value)} placeholder="Describe your offer..." className="min-h-[100px]" />
-            </div>
-            <Button className="w-full" onClick={handleSubmitProposal} disabled={submitting}>
-              {submitting ? "Submitting..." : "Submit Proposal"}
-            </Button>
+      {/* Search Bar */}
+      <div className="flex gap-4 items-stretch">
+        <div className="flex-1 flex items-center bg-white border border-border rounded-md px-4 py-3 gap-3">
+          <div className="flex-1">
+            <p className="text-xs text-tc-text-primary">Onde</p>
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar destinos"
+              className="w-full bg-transparent text-base text-tc-text-secondary placeholder:text-tc-text-secondary outline-none"
+            />
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
+          <div className="w-px h-[39px] bg-border" />
+          <div className="flex-1">
+            <p className="text-xs text-tc-text-primary">Quando</p>
+            <p className="text-base text-tc-text-secondary">Adicione Datas</p>
+          </div>
+          <button className="shrink-0 bg-rose-500 rounded-full p-2.5 shadow-md hover:bg-rose-600 transition-colors">
+            <Search className="h-4 w-4 text-white" />
+          </button>
+        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2.5 px-6 bg-white border border-border rounded-md text-base text-tc-text-secondary hover:bg-muted transition-colors"
+        >
+          <SlidersHorizontal className="h-5 w-5" />
+          Filtros
+        </button>
+      </div>
 
-export default Opportunities
+      {/* Advanced Filters */}
+      <OpportunityFilters
+        open={showFilters}
+        onClose={() => setShowFilters(false)}
+      />
+
+      {/* Results Section */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-navy-500" />
+          <div>
+            <p className="text-base font-medium text-tc-text-primary">
+              {section.title}
+            </p>
+            <p className="text-sm text-tc-text-hint">{section.subtitle}</p>
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-[220px] rounded-md" />
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="bg-white border border-border rounded-md py-16 text-center text-tc-text-hint">
+            {activeTab === "favorites"
+              ? "Voce ainda nao favoritou nenhuma oportunidade. Clique no coracao para salvar!"
+              : "Nenhuma oportunidade encontrada."}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((opp: any, i: number) => {
+              const origIdx = opportunities.indexOf(opp);
+              return (
+                <OpportunityCard
+                  key={opp.id}
+                  id={opp.id}
+                  title={opp.title}
+                  destination={opp.destination}
+                  description={opp.description}
+                  start_date={opp.start_date}
+                  end_date={opp.end_date}
+                  imageUrl={MOCK_IMAGES[origIdx % MOCK_IMAGES.length]}
+                  matchPercent={MOCK_MATCH[origIdx % MOCK_MATCH.length]}
+                  rating={MOCK_RATING[origIdx % MOCK_RATING.length]}
+                  duration={MOCK_DURATION[origIdx % MOCK_DURATION.length]}
+                  compensationLabel={
+                    MOCK_COMPENSATION[origIdx % MOCK_COMPENSATION.length]
+                  }
+                  tags={MOCK_TAGS_MAP[origIdx % 5] ?? []}
+                  isFavorite={favoriteIds.has(opp.id)}
+                  onToggleFavorite={() => toggleFavorite(opp.id)}
+                />
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Opportunities;

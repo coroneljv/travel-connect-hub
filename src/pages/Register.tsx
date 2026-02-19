@@ -17,14 +17,29 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Info, CheckCircle2 } from "lucide-react";
+import { Upload, Info, CheckCircle2, MapPin, Building2 } from "lucide-react";
+import HostTypeFamilyForm from "@/components/shared/HostTypeFamilyForm";
+import type { HostSignupStep3FamilyData } from "@/components/shared/HostTypeFamilyForm";
+import HostTypeOngForm from "@/components/shared/HostTypeOngForm";
+import type { HostSignupStep3OngData } from "@/components/shared/HostTypeOngForm";
+import HostTypeHostelForm from "@/components/shared/HostTypeHostelForm";
+import type { HostSignupStep3HostelData } from "@/components/shared/HostTypeHostelForm";
+import HostTypeHotelForm from "@/components/shared/HostTypeHotelForm";
+import type { HostSignupStep3HotelData } from "@/components/shared/HostTypeHotelForm";
+import HostTypeFarmForm from "@/components/shared/HostTypeFarmForm";
+import type { HostSignupStep3FarmData } from "@/components/shared/HostTypeFarmForm";
+import HostTypeSchoolForm from "@/components/shared/HostTypeSchoolForm";
+import type { HostSignupStep3SchoolData } from "@/components/shared/HostTypeSchoolForm";
+import HostTypeCompanyForm from "@/components/shared/HostTypeCompanyForm";
+import type { HostSignupStep3CompanyData } from "@/components/shared/HostTypeCompanyForm";
+import HostSignupApprovedModal from "@/components/modals/HostSignupApprovedModal";
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const VIAJANTE_STEP_LABELS = ["Pessoal", "Verificacao", "Habilidades", "Sobre Mim", "Viagens"];
-const ANFITRIAO_STEP_LABELS = ["Organizacao", "Localizacao", "Informacoes", "Finalizacao"];
+const ANFITRIAO_STEP_LABELS = ["Organização", "Localização", "Informações", "Finalização"];
 
 const LANGUAGES = [
   "Ingles",
@@ -87,14 +102,49 @@ const DURATIONS = [
 ];
 
 const HOST_TYPES = [
-  { emoji: "\uD83E\uDD1D", label: "ONG / Org. sem fins lucrativos" },
-  { emoji: "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66", label: "Familia" },
-  { emoji: "\uD83C\uDFE0", label: "Hostel / Albergue" },
-  { emoji: "\uD83C\uDFE8", label: "Hotel / Pousada" },
-  { emoji: "\uD83C\uDF3E", label: "Fazenda / Sitio" },
-  { emoji: "\uD83C\uDF93", label: "Escola / Instituto" },
-  { emoji: "\uD83C\uDFE2", label: "Empresa" },
+  { emoji: "🤝", label: "ONG / Org. sem fins lucrativos" },
+  { emoji: "👨‍👩‍👧‍👦", label: "Família" },
+  { emoji: "🏠", label: "Hostel / Albergue" },
+  { emoji: "🏨", label: "Hotel / Pousada" },
+  { emoji: "🌾", label: "Fazenda / Sítio" },
+  { emoji: "🎓", label: "Escola / Instituto" },
+  { emoji: "🏢", label: "Empresa" },
 ];
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+/** Localização step (Etapa 2 de 4) — TODO: usar ao integrar Supabase */
+export interface HostSignupStep1Data {
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  postalCode: string;
+}
+
+/** Organização step (Etapa 1 de 4) — TODO: usar ao integrar Supabase */
+export interface HostSignupStep2Data {
+  orgName: string;
+  hostType: string;
+}
+
+export type { HostSignupStep3FamilyData };
+export type { HostSignupStep3OngData };
+export type { HostSignupStep3HostelData };
+export type { HostSignupStep3HotelData };
+export type { HostSignupStep3FarmData };
+export type { HostSignupStep3SchoolData };
+export type { HostSignupStep3CompanyData };
+
+/** Finalização step (Etapa 4 de 4) — TODO: usar ao integrar Supabase */
+export interface HostSignupStep4Data {
+  /** TODO: substituir por File[] quando integrar Supabase Storage */
+  photoCount: number;
+  declarationAccepted: boolean;
+  termsAccepted: boolean;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -205,13 +255,33 @@ const Register = () => {
   const [country, setCountry] = useState("");
   const [postalCode, setPostalCode] = useState("");
 
-  // Anfitriao: Informacoes (step 2)
+  // Anfitriao: Informacoes (step 2) — shared
   const [cpf, setCpf] = useState("");
+  // Anfitriao: Informacoes — Família
   const [familyMembers, setFamilyMembers] = useState("");
+  // Anfitriao: Informacoes — ONG
+  const [cnpj, setCnpj] = useState("");
+  const [foundationYear, setFoundationYear] = useState("");
+  const [registrationNumber, setRegistrationNumber] = useState("");
+  // Anfitriao: Informacoes — Hostel / Hotel
+  const [cadastur, setCadastur] = useState("");
+  const [roomCount, setRoomCount] = useState("");
+  const [totalCapacity, setTotalCapacity] = useState("");
+  // Anfitriao: Informacoes — Fazenda
+  const [car, setCar] = useState("");
+  const [propertySize, setPropertySize] = useState("");
+  // Anfitriao: Informacoes — Escola
+  const [mecCode, setMecCode] = useState("");
+  const [educationLevel, setEducationLevel] = useState("");
+  // Anfitriao: Informacoes — Empresa
+  const [companySize, setCompanySize] = useState("");
 
   // Anfitriao: Finalizacao (step 3)
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Anfitriao: Modal aprovação
+  const [showApprovedModal, setShowApprovedModal] = useState(false);
 
   // ---------------------------------------------------------------------------
   // Navigation
@@ -240,30 +310,28 @@ const Register = () => {
   const handleFinalSubmit = async () => {
     setIsLoading(true);
     try {
-      if (!email || !fullName) {
-        toast.error("Por favor preencha todos os campos obrigatorios.");
-        setIsLoading(false);
-        return;
+      if (isViajante) {
+        if (!email || !fullName) {
+          toast.error("Por favor preencha todos os campos obrigatorios.");
+          setIsLoading(false);
+          return;
+        }
+        const finalPassword = password || "temp123456";
+        await signUp({
+          email,
+          password: finalPassword,
+          fullName,
+          uiRole: selectedUIRole!,
+          phone: phone || undefined,
+        });
+        toast.success("Cadastro finalizado com sucesso!");
+        navigate("/dashboard");
+      } else {
+        // TODO: integrar criação de conta Supabase para Anfitrião
+        // Simula envio + abre modal de aprovação
+        await new Promise((r) => setTimeout(r, 1000));
+        setShowApprovedModal(true);
       }
-
-      const finalPassword = password || "temp123456";
-
-      await signUp({
-        email,
-        password: finalPassword,
-        fullName,
-        uiRole: selectedUIRole!,
-        phone: phone || undefined,
-        orgName: isViajante ? undefined : orgName || undefined,
-        orgCountry: isViajante ? undefined : country || undefined,
-      });
-
-      toast.success(
-        isViajante
-          ? "Cadastro finalizado com sucesso!"
-          : "Perfil enviado para validacao! Nossa equipe revisara em ate 48 horas."
-      );
-      navigate("/dashboard");
     } catch (error: any) {
       toast.error(error.message || "Falha no cadastro");
     } finally {
@@ -286,8 +354,8 @@ const Register = () => {
   const nextLabel = isLastStep
     ? isViajante
       ? "Finalizar"
-      : "Enviar para Validacao"
-    : "Proximo";
+      : "Enviar para Validação"
+    : "Próximo";
 
   // ---------------------------------------------------------------------------
   // Step Renderers: Viajante
@@ -530,55 +598,70 @@ const Register = () => {
   const renderAnfitriaoOrganizacao = () => (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="reg-orgname">Nome da Organizacao</Label>
-        <Input
-          id="reg-orgname"
-          placeholder="Nome do seu espaco ou organizacao"
-          value={orgName}
-          onChange={(e) => setOrgName(e.target.value)}
-          className="bg-gray-50"
-        />
+        <Label htmlFor="reg-orgname">Nome da Organização</Label>
+        <div className="relative">
+          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tc-text-hint" />
+          <Input
+            id="reg-orgname"
+            placeholder="Ex: Green Paradise Eco Lodge"
+            value={orgName}
+            onChange={(e) => setOrgName(e.target.value)}
+            className="bg-gray-50 pl-9"
+          />
+        </div>
       </div>
 
       <div>
-        <Label className="text-base font-semibold mb-3 block">Tipo de Anfitriao</Label>
+        <Label className="text-base font-semibold mb-3 block">
+          Tipo de Anfitrião<span className="text-rose-500"> *</span>
+        </Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {HOST_TYPES.map((ht) => (
             <button
               key={ht.label}
               type="button"
               onClick={() => setHostType(ht.label)}
-              className={`flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-colors ${
+              className={`flex items-center gap-3 p-4 rounded-lg border text-left transition-colors ${
+                ht.label === "Empresa" ? "sm:col-span-2" : ""
+              } ${
                 hostType === ht.label
-                  ? "border-rose-500 bg-rose-50"
-                  : "border-gray-200 bg-white hover:border-gray-300"
+                  ? "border-navy-500 bg-navy-50"
+                  : "border-border bg-white hover:border-gray-300"
               }`}
             >
               <span className="text-2xl">{ht.emoji}</span>
-              <span className="text-sm font-medium text-navy-500">{ht.label}</span>
+              <span className="text-sm font-medium text-tc-text-primary">{ht.label}</span>
             </button>
           ))}
         </div>
       </div>
+
     </div>
   );
 
   const renderAnfitriaoLocalizacao = () => (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="reg-address">Endereco</Label>
-        <Input
-          id="reg-address"
-          placeholder="Rua, numero, complemento"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          className="bg-gray-50"
-        />
+        <Label htmlFor="reg-address">
+          Endereço<span className="text-rose-500">*</span>
+        </Label>
+        <div className="relative">
+          <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tc-text-hint" />
+          <Input
+            id="reg-address"
+            placeholder="Rua, número, complemento"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="bg-gray-50 pl-9"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="reg-city">Cidade</Label>
+          <Label htmlFor="reg-city">
+            Cidade<span className="text-rose-500">*</span>
+          </Label>
           <Input
             id="reg-city"
             placeholder="Cidade"
@@ -588,10 +671,12 @@ const Register = () => {
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="reg-state">Estado</Label>
+          <Label htmlFor="reg-state">
+            Estado<span className="text-rose-500">*</span>
+          </Label>
           <Input
             id="reg-state"
-            placeholder="Estado"
+            placeholder="Estado / Província"
             value={state}
             onChange={(e) => setState(e.target.value)}
             className="bg-gray-50"
@@ -601,20 +686,24 @@ const Register = () => {
 
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="reg-country">Pais</Label>
+          <Label htmlFor="reg-country">
+            País<span className="text-rose-500">*</span>
+          </Label>
           <Input
             id="reg-country"
-            placeholder="Pais"
+            placeholder="País"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             className="bg-gray-50"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="reg-postal">CEP</Label>
+          <Label htmlFor="reg-postal">
+            Código Postal<span className="text-rose-500">*</span>
+          </Label>
           <Input
             id="reg-postal"
-            placeholder="00000-000"
+            placeholder="Código"
             value={postalCode}
             onChange={(e) => setPostalCode(e.target.value)}
             className="bg-gray-50"
@@ -624,136 +713,191 @@ const Register = () => {
     </div>
   );
 
-  const renderAnfitriaoInformacoes = () => (
-    <div className="space-y-5">
-      <InfoBox>
-        Nosso sistema utiliza verificacao com inteligencia artificial para garantir a autenticidade
-        dos documentos enviados e a seguranca da plataforma.
-      </InfoBox>
-
-      <div className="space-y-2">
-        <Label htmlFor="reg-email-host">E-mail</Label>
-        <Input
-          id="reg-email-host"
-          type="email"
-          placeholder="e-mail@exemplo.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="bg-gray-50"
+  const renderAnfitriaoInformacoes = () => {
+    if (hostType === "Família") {
+      return (
+        <HostTypeFamilyForm
+          value={{ cpf, familyMembers }}
+          onChange={(data) => {
+            setCpf(data.cpf);
+            setFamilyMembers(data.familyMembers);
+          }}
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="reg-password-host">Senha</Label>
-        <Input
-          id="reg-password-host"
-          type="password"
-          placeholder="******"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="bg-gray-50"
+      );
+    }
+    if (hostType === "ONG / Org. sem fins lucrativos") {
+      return (
+        <HostTypeOngForm
+          value={{ cnpj, foundationYear, registrationNumber }}
+          onChange={(data) => {
+            setCnpj(data.cnpj);
+            setFoundationYear(data.foundationYear);
+            setRegistrationNumber(data.registrationNumber);
+          }}
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="reg-fullname-host">Nome Completo</Label>
-        <Input
-          id="reg-fullname-host"
-          placeholder="Seu nome completo"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          className="bg-gray-50"
+      );
+    }
+    if (hostType === "Hostel / Albergue") {
+      return (
+        <HostTypeHostelForm
+          value={{ cnpj, cadastur, roomCount, totalCapacity }}
+          onChange={(data) => {
+            setCnpj(data.cnpj);
+            setCadastur(data.cadastur);
+            setRoomCount(data.roomCount);
+            setTotalCapacity(data.totalCapacity);
+          }}
         />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="reg-cpf">CPF</Label>
-        <Input
-          id="reg-cpf"
-          placeholder="000.000.000-00"
-          value={cpf}
-          onChange={(e) => setCpf(e.target.value)}
-          className="bg-gray-50"
+      );
+    }
+    if (hostType === "Hotel / Pousada") {
+      return (
+        <HostTypeHotelForm
+          value={{ cnpj, cadastur, roomCount, totalCapacity }}
+          onChange={(data) => {
+            setCnpj(data.cnpj);
+            setCadastur(data.cadastur);
+            setRoomCount(data.roomCount);
+            setTotalCapacity(data.totalCapacity);
+          }}
         />
+      );
+    }
+    if (hostType === "Fazenda / Sítio") {
+      return (
+        <HostTypeFarmForm
+          value={{ cnpj, car, propertySize }}
+          onChange={(data) => {
+            setCnpj(data.cnpj);
+            setCar(data.car);
+            setPropertySize(data.propertySize);
+          }}
+        />
+      );
+    }
+    if (hostType === "Escola / Instituto") {
+      return (
+        <HostTypeSchoolForm
+          value={{ cnpj, mecCode, educationLevel }}
+          onChange={(data) => {
+            setCnpj(data.cnpj);
+            setMecCode(data.mecCode);
+            setEducationLevel(data.educationLevel);
+          }}
+        />
+      );
+    }
+    if (hostType === "Empresa") {
+      return (
+        <HostTypeCompanyForm
+          value={{ cnpj, foundationYear, companySize }}
+          onChange={(data) => {
+            setCnpj(data.cnpj);
+            setFoundationYear(data.foundationYear);
+            setCompanySize(data.companySize);
+          }}
+        />
+      );
+    }
+    // Fallback: nenhum tipo selecionado ainda
+    return (
+      <div className="flex flex-col items-center justify-center py-10 space-y-3">
+        <Info className="h-8 w-8 text-tc-text-hint" />
+        <p className="text-sm text-tc-text-secondary text-center">
+          Selecione um tipo de anfitrião na etapa <strong>Organização</strong> para preencher as informações específicas.
+        </p>
+        <button
+          type="button"
+          onClick={() => setCurrentStep(0)}
+          className="text-sm text-navy-500 font-medium hover:underline"
+        >
+          Ir para Organização
+        </button>
       </div>
-
-      {hostType === "Familia" && (
-        <div className="space-y-2">
-          <Label htmlFor="reg-family">Numero de Membros da Familia</Label>
-          <Select value={familyMembers} onValueChange={setFamilyMembers}>
-            <SelectTrigger className="bg-gray-50">
-              <SelectValue placeholder="Selecione" />
-            </SelectTrigger>
-            <SelectContent>
-              {["1", "2", "3", "4", "5", "6", "7", "8+"].map((n) => (
-                <SelectItem key={n} value={n}>
-                  {n}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
-
-      <div className="space-y-3">
-        <Label className="text-base font-semibold block">Documentos</Label>
-        <UploadArea label="Documento de Identidade" />
-        <UploadArea label="Comprovante de Residencia" />
-        <UploadArea label="Selfie com Documento" />
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderAnfitriaoFinalizacao = () => (
     <div className="space-y-5">
+      {/* Photo upload */}
       <div>
         <Label className="text-base font-semibold mb-3 block">
-          Fotos do Espaco <span className="text-sm font-normal text-gray-500">(minimo 3)</span>
+          Fotos do Local<span className="text-rose-500">*</span>{" "}
+          <span className="text-sm font-normal text-tc-text-hint">(mínimo 3 fotos)</span>
         </Label>
-        <div className="grid grid-cols-3 gap-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <UploadArea key={i} label={i < 3 ? `Foto ${i + 1} *` : `Foto ${i + 1}`} className="min-h-[100px]" />
-          ))}
+        {/* TODO: integrar upload real via Supabase Storage */}
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-400 transition-colors bg-gray-50">
+          <Upload className="w-8 h-8 text-gray-400" />
+          <span className="text-sm text-tc-text-secondary text-center">
+            Clique para fazer upload ou arraste a imagem
+          </span>
+          <span className="text-xs text-tc-text-hint">PNG, JPG até 5MB</span>
         </div>
+        <p className="text-xs text-tc-text-hint mt-2">
+          Fotos adicionadas 0 / Mínimo 3
+        </p>
       </div>
 
-      <div className="space-y-4">
+      {/* Declaração de Veracidade — bordered card */}
+      <div className="border border-border rounded-lg p-4 space-y-2">
         <div className="flex items-start gap-3">
           <Checkbox
             id="declaration"
             checked={declarationAccepted}
             onCheckedChange={(checked) => setDeclarationAccepted(checked === true)}
+            className="mt-0.5"
           />
-          <label htmlFor="declaration" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-            Declaro que todas as informacoes fornecidas sao verdadeiras e que estou ciente de que
-            informacoes falsas podem resultar na remocao do meu perfil da plataforma.
-          </label>
-        </div>
-
-        <div className="flex items-start gap-3">
-          <Checkbox
-            id="terms"
-            checked={termsAccepted}
-            onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-          />
-          <label htmlFor="terms" className="text-sm text-gray-700 leading-relaxed cursor-pointer">
-            Li e aceito os{" "}
-            <Link to="#" className="text-rose-500 hover:underline">
-              Termos de Uso
-            </Link>{" "}
-            e a{" "}
-            <Link to="#" className="text-rose-500 hover:underline">
-              Politica de Privacidade
-            </Link>{" "}
-            da plataforma Travel Connect.
-          </label>
+          <div>
+            <label
+              htmlFor="declaration"
+              className="text-sm font-semibold text-tc-text-primary cursor-pointer"
+            >
+              Declaração de Veracidade<span className="text-rose-500"> *</span>
+            </label>
+            <p className="text-xs text-tc-text-secondary leading-relaxed mt-1">
+              Declaro que todas as informações fornecidas são verdadeiras e que sou
+              responsável legal pela organização. Compreendo que informações falsas
+              podem resultar no cancelamento da conta.
+            </p>
+          </div>
         </div>
       </div>
 
-      <InfoBox>
-        <strong>Proximos Passos</strong> - Apos enviar seu perfil, nossa equipe ira revisar as
-        informacoes em ate 48 horas.
-      </InfoBox>
+      {/* Terms */}
+      <div className="flex items-start gap-3">
+        <Checkbox
+          id="terms"
+          checked={termsAccepted}
+          onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+          className="mt-0.5"
+        />
+        <label htmlFor="terms" className="text-sm text-tc-text-secondary leading-relaxed cursor-pointer">
+          Li e aceito os{" "}
+          <Link to="#" className="text-rose-500 font-semibold hover:underline">
+            Termos de Uso
+          </Link>{" "}
+          e a{" "}
+          <Link to="#" className="text-rose-500 font-semibold hover:underline">
+            Política de Privacidade da Plataforma
+          </Link>
+          <span className="text-rose-500">*</span>
+        </label>
+      </div>
+
+      {/* Próximos Passos — rose info box */}
+      <div className="flex gap-3 items-start border border-rose-200 rounded-lg p-4 bg-rose-50">
+        <CheckCircle2 className="h-5 w-5 text-rose-500 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-sm font-semibold text-tc-text-primary">
+            Próximos Passos
+          </p>
+          <p className="text-xs text-tc-text-secondary leading-relaxed mt-1">
+            Após enviar seu perfil, nossa equipe irá revisar as informações em até 48
+            horas. Você receberá um e-mail quando seu perfil for aprovado e poderá
+            começar a publicar oportunidades.
+          </p>
+        </div>
+      </div>
     </div>
   );
 
@@ -805,15 +949,17 @@ const Register = () => {
           <Logo size="md" />
         </div>
 
-        {/* Header */}
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-navy-500">
-            Cadastro de {isViajante ? "Viajante" : "Anfitriao"}
-          </h1>
-          <p className="text-muted-foreground text-sm">
-            Preencha as informacoes para criar seu perfil na plataforma.
-          </p>
-        </div>
+        {/* Header — only for Viajante; Anfitrião card has its own header */}
+        {isViajante && (
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold text-navy-500">
+              Cadastro de Viajante
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Preencha as informacoes para criar seu perfil na plataforma.
+            </p>
+          </div>
+        )}
 
         {/* Progress indicator */}
         <div className="space-y-3">
@@ -828,21 +974,35 @@ const Register = () => {
           <Progress value={progressPercent} className="h-2" />
 
           {/* Clickable step tabs */}
-          <div className="flex gap-1 overflow-x-auto pb-1">
+          <div
+            className={`flex overflow-x-auto ${
+              !isViajante ? "border-b border-border gap-0" : "gap-1 pb-1"
+            }`}
+          >
             {stepLabels.map((label, index) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => setCurrentStep(index)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                  index === currentStep
-                    ? "bg-navy-500 text-white"
-                    : index < currentStep
-                    ? "bg-navy-100 text-navy-500"
-                    : "bg-gray-100 text-gray-400"
-                }`}
+                className={
+                  !isViajante
+                    ? `flex-1 pb-2 text-xs font-medium whitespace-nowrap transition-colors border-b-2 ${
+                        index === currentStep
+                          ? "border-navy-500 text-tc-text-primary"
+                          : "border-transparent text-tc-text-hint"
+                      }`
+                    : `px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                        index === currentStep
+                          ? "bg-navy-500 text-white"
+                          : index < currentStep
+                          ? "bg-navy-100 text-navy-500"
+                          : "bg-gray-100 text-gray-400"
+                      }`
+                }
               >
-                {index < currentStep && <CheckCircle2 className="w-3 h-3 inline mr-1" />}
+                {isViajante && index < currentStep && (
+                  <CheckCircle2 className="w-3 h-3 inline mr-1" />
+                )}
                 {label}
               </button>
             ))}
@@ -850,9 +1010,11 @@ const Register = () => {
         </div>
 
         {/* Step content card */}
-        <Card className="border-0 shadow-lg">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg text-navy-500">{stepLabels[currentStep]}</CardTitle>
+        <Card className={isViajante ? "border-0 shadow-lg" : ""}>
+          <CardHeader className={`pb-2 ${!isViajante ? "text-center" : ""}`}>
+            <CardTitle className="text-lg text-navy-500">
+              {isViajante ? stepLabels[currentStep] : "Anfitrião"}
+            </CardTitle>
             <CardDescription>
               {isViajante
                 ? [
@@ -862,48 +1024,80 @@ const Register = () => {
                     "Conte-nos mais sobre voce",
                     "Defina suas preferencias de viagem",
                   ][currentStep]
-                : [
-                    "Informacoes sobre sua organizacao",
-                    "Endereco do seu espaco",
-                    "Dados pessoais e documentacao",
-                    "Fotos e confirmacao final",
-                  ][currentStep]}
+                : "Complete seu perfil para começar a receber viajantes"}
             </CardDescription>
           </CardHeader>
-          <CardContent>{renderCurrentStep()}</CardContent>
+          <CardContent>
+            {renderCurrentStep()}
+
+            {/* Anfitrião: buttons inside card */}
+            {!isViajante && (
+              <div className="grid grid-cols-2 gap-4 mt-6">
+                <button
+                  type="button"
+                  onClick={currentStep > 0 ? goBack : () => navigate("/login")}
+                  className="py-3 px-6 rounded-lg border border-border text-tc-text-primary font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Voltar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextOrSubmit}
+                  disabled={isLoading || (isLastStep && (!declarationAccepted || !termsAccepted))}
+                  className="py-3 px-6 rounded-lg font-medium text-white transition-colors disabled:opacity-50 bg-navy-500 hover:bg-navy-600 flex items-center justify-center gap-2"
+                >
+                  {isLoading ? (
+                    "Enviando..."
+                  ) : (
+                    <>
+                      {isLastStep && <CheckCircle2 className="w-4 h-4" />}
+                      {nextLabel}
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+          </CardContent>
         </Card>
 
-        {/* Navigation buttons */}
-        <div className="flex gap-4">
-          {currentStep > 0 && (
+        {/* Viajante: buttons outside card */}
+        {isViajante && (
+          <div className={`grid gap-4 ${currentStep > 0 ? "grid-cols-2" : "grid-cols-1"}`}>
+            {currentStep > 0 && (
+              <button
+                type="button"
+                onClick={goBack}
+                className="py-3 px-6 rounded-lg border border-border text-tc-text-primary font-medium hover:bg-gray-50 transition-colors"
+              >
+                Voltar
+              </button>
+            )}
             <button
               type="button"
-              onClick={goBack}
-              className="flex-1 py-3 px-6 rounded-lg border-2 border-navy-500 text-navy-500 font-medium hover:bg-navy-50 transition-colors"
+              onClick={handleNextOrSubmit}
+              disabled={isLoading}
+              className="py-3 px-6 rounded-lg font-medium text-white transition-colors disabled:opacity-50 bg-navy-500 hover:bg-navy-600"
             >
-              Voltar
+              {isLoading ? "Enviando..." : nextLabel}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={handleNextOrSubmit}
-            disabled={isLoading || (isLastStep && !isViajante && (!declarationAccepted || !termsAccepted))}
-            className={`flex-1 py-3 px-6 rounded-lg font-medium text-white transition-colors disabled:opacity-50 ${
-              currentStep === 0 ? "w-full" : ""
-            } bg-navy-500 hover:bg-navy-600`}
-          >
-            {isLoading ? "Enviando..." : nextLabel}
-          </button>
-        </div>
+          </div>
+        )}
 
         {/* Login link */}
         <p className="text-center text-sm text-muted-foreground pb-4">
-          Ja possui conta?{" "}
+          Já possui conta?{" "}
           <Link to="/login" className="text-rose-500 hover:underline font-medium">
-            Faca login
+            Login
           </Link>
         </p>
       </div>
+
+      {/* Modal: Cadastro aprovado (Anfitrião) */}
+      <HostSignupApprovedModal
+        open={showApprovedModal}
+        onClose={() => setShowApprovedModal(false)}
+        onPrimaryAction={() => navigate("/login")}
+      />
     </AuthBackground>
   );
 };

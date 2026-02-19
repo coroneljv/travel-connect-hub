@@ -1,14 +1,13 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useAuth } from "@/contexts/AuthContext";
-import { Zap, Bell, MessageSquare, Settings, LogOut } from "lucide-react";
+import { ChevronDown, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { dbRoleToUIRole, ROLE_CONFIG } from "@/lib/roles";
+import { dbRoleToUIRole } from "@/lib/roles";
 
-const navItems = [
+const BASE_NAV = [
   { label: "Início", path: "/dashboard" },
-  { label: "Oportunidades", path: "/opportunities" },
+  { label: "Oportunidades", viajante: "/opportunities", anfitriao: "/anfitriao/oportunidades" },
   { label: "Candidaturas", path: "/applications" },
   { label: "Academy", path: "/academy" },
   { label: "Avaliações", path: "/reviews" },
@@ -20,11 +19,6 @@ export function TopNavbar() {
   const navigate = useNavigate();
   const uiRole = userRole ? dbRoleToUIRole(userRole) : null;
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate("/login");
-  };
-
   const initials = profile?.full_name
     ? profile.full_name
         .split(" ")
@@ -35,80 +29,63 @@ export function TopNavbar() {
     : "?";
 
   return (
-    <header className="h-16 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-      <div className="max-w-screen-2xl mx-auto h-full flex items-center px-6">
-        {/* Logo */}
-        <div className="mr-8 flex-shrink-0">
-          <Logo size="sm" showText={false} />
-        </div>
+    <header className="h-20 bg-navy-500 sticky top-0 z-50 flex items-center px-6 gap-4">
+      {/* Logo */}
+      <div className="shrink-0 flex items-center justify-center">
+        <Logo size="sm" showText={false} color="white" />
+      </div>
 
-        {/* Nav Links */}
-        <nav className="hidden md:flex items-center gap-1 flex-1">
-          {navItems.map((item) => (
+      {/* Nav Links */}
+      <nav className="hidden md:flex items-center gap-8 flex-1 h-full overflow-hidden">
+        {BASE_NAV.map((item) => {
+          const path =
+            "path" in item && item.path
+              ? item.path
+              : uiRole === "anfitriao"
+                ? (item as any).anfitriao
+                : (item as any).viajante;
+          return (
             <NavLink
-              key={item.path}
-              to={item.path}
+              key={path}
+              to={path}
               className={({ isActive }) =>
-                `px-4 py-5 text-sm font-medium transition-colors relative ${
-                  isActive
-                    ? "text-navy-500 after:absolute after:bottom-0 after:left-2 after:right-2 after:h-0.5 after:bg-rose-500"
-                    : "text-muted-foreground hover:text-navy-500"
+                `flex-1 flex items-center justify-center px-4 py-1 text-base font-normal text-white text-center transition-opacity ${
+                  isActive ? "opacity-100" : "opacity-70 hover:opacity-100"
                 }`
               }
             >
               {item.label}
             </NavLink>
-          ))}
-        </nav>
+          );
+        })}
+      </nav>
 
-        {/* Right side */}
-        <div className="flex items-center gap-2 ml-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            className="gap-1.5 bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
-          >
-            <Zap className="h-3.5 w-3.5" />
-            <span>5</span>
-          </Button>
+      {/* Right side: credits + lang + avatar */}
+      <div className="flex items-center gap-2.5 shrink-0">
+        {/* Credits badge */}
+        <button className="flex items-center gap-1.5 h-[37px] px-[7px] py-px rounded-md border border-white/30 bg-white/10 text-white">
+          <Zap className="h-5 w-5" />
+          <span className="text-xs font-medium">5</span>
+        </button>
 
-          {uiRole && (
-            <span
-              className={`text-xs px-2.5 py-1 rounded-full font-medium ${
-                uiRole === "viajante"
-                  ? "bg-navy-500 text-white"
-                  : "bg-rose-500 text-white"
-              }`}
-            >
-              {ROLE_CONFIG[uiRole].label}
-            </span>
-          )}
+        {/* Language selector */}
+        <div className="flex items-center gap-1.5 h-[37px] px-[7px] py-px rounded-md border border-white/30 bg-white/10">
+          <span className="text-lg">🇧🇷</span>
+          <ChevronDown className="h-4 w-4 text-white" />
+        </div>
 
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <Bell className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <MessageSquare className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" className="text-muted-foreground">
-            <Settings className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground"
-            onClick={handleSignOut}
-          >
-            <LogOut className="h-4 w-4" />
-          </Button>
-
-          <Avatar className="h-9 w-9 ml-1">
+        {/* Avatar + dropdown */}
+        <button
+          onClick={() => navigate("/profile")}
+          className="flex items-center gap-2.5 h-full"
+        >
+          <Avatar className="h-[60px] w-[60px]">
             <AvatarImage src={profile?.avatar_url ?? undefined} />
-            <AvatarFallback className="bg-navy-100 text-navy-600 text-sm font-medium">
+            <AvatarFallback className="bg-navy-400 text-white text-sm font-medium">
               {initials}
             </AvatarFallback>
           </Avatar>
-        </div>
+        </button>
       </div>
     </header>
   );

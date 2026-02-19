@@ -23,6 +23,10 @@ import {
   ArrowRight,
   Briefcase,
   FileText,
+  Bell,
+  MessageSquare,
+  Settings,
+  LogOut,
 } from "lucide-react";
 import { dbRoleToUIRole, ROLE_CONFIG } from "@/lib/roles";
 
@@ -35,11 +39,13 @@ function ViajanteDashboard({
   proposalCount,
   openRequests,
   recentRequests,
+  onSignOut,
 }: {
   profile: { full_name: string; avatar_url?: string | null } | null;
   requestCount: number;
   proposalCount: number;
   openRequests: number;
+  onSignOut: () => void;
   recentRequests: any[];
 }) {
   const firstName = profile?.full_name?.split(" ")[0] ?? "Viajante";
@@ -127,9 +133,28 @@ function ViajanteDashboard({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full">
-              <Zap className="h-4 w-4" />
-              <span className="text-sm font-semibold">5 Creditos</span>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full">
+                <Zap className="h-4 w-4" />
+                <span className="text-sm font-semibold">5 Creditos</span>
+              </div>
+              <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+              </button>
+              <Link to="/chat" className="relative p-2 rounded-full hover:bg-muted transition-colors">
+                <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-rose-500 border-2 border-white" />
+              </Link>
+              <Link to="/settings" className="p-2 rounded-full hover:bg-muted transition-colors">
+                <Settings className="h-5 w-5 text-muted-foreground" />
+              </Link>
+              <button
+                onClick={onSignOut}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+                title="Sair"
+              >
+                <LogOut className="h-5 w-5 text-muted-foreground" />
+              </button>
             </div>
           </div>
         </CardContent>
@@ -308,12 +333,14 @@ function AnfitriaoDashboard({
   proposalCount,
   openRequests,
   recentRequests,
+  onSignOut,
 }: {
   profile: { full_name: string; avatar_url?: string | null } | null;
   requestCount: number;
   proposalCount: number;
   openRequests: number;
   recentRequests: any[];
+  onSignOut: () => void;
 }) {
   const firstName = profile?.full_name?.split(" ")[0] ?? "Anfitriao";
   const initials = profile?.full_name
@@ -326,31 +353,46 @@ function AnfitriaoDashboard({
     : "AN";
 
   const stats = [
-    { label: "Candidaturas", value: requestCount || 12, icon: FileText, color: "text-rose-500" },
-    { label: "Oportunidades", value: openRequests || 5, icon: Briefcase, color: "text-navy-500" },
-    { label: "Avaliacoes", value: "4.9", icon: Star, color: "text-yellow-500" },
+    { label: "Candidaturas", value: requestCount || 12, icon: FileText, bg: "bg-rose-500" },
+    { label: "Oportunidades", value: openRequests || 5, icon: Briefcase, bg: "bg-rose-500" },
+    { label: "Avaliacoes", value: "4.9", icon: Star, bg: "bg-navy-500" },
   ];
 
   const mockCandidaturas = [
     {
       name: "Maria Silva",
-      status: "Pendente",
-      badgeClass: "bg-yellow-100 text-yellow-700",
-      initials: "MS",
+      role: "Organic Farm Helper",
+      status: "Pendente" as const,
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop",
+      location: "Brazil",
+      rating: 4.9,
+      experience: "3 anos exp.",
     },
     {
       name: "John Anderson",
-      status: "Recusado",
-      badgeClass: "bg-red-100 text-red-700",
-      initials: "JA",
+      role: "Recepcionista Hostel",
+      status: "Recusado" as const,
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop",
+      location: "USA",
+      rating: 4.7,
+      experience: "2 anos exp.",
     },
     {
       name: "Sophie Laurent",
-      status: "Aceita",
-      badgeClass: "bg-green-100 text-green-700",
-      initials: "SL",
+      role: "Social Media Manager",
+      status: "Aceita" as const,
+      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop",
+      location: "France",
+      rating: 5,
+      experience: "5 anos exp.",
     },
   ];
+
+  const statusConfig = {
+    Pendente: "bg-amber-50 text-amber-600 border border-amber-200",
+    Recusado: "bg-tc-red-bg text-tc-red-text border border-tc-red-border",
+    Aceita: "bg-tc-green-bg text-tc-green-text border border-tc-green-border",
+  } as const;
 
   return (
     <div className="space-y-6">
@@ -359,31 +401,53 @@ function AnfitriaoDashboard({
         <CardContent className="p-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarFallback className="bg-rose-100 text-rose-700 text-lg font-semibold">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="h-16 w-16">
+                  <AvatarFallback className="bg-rose-100 text-rose-700 text-lg font-semibold">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-emerald-500 border-2 border-white" />
+              </div>
 
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold tracking-tight">
                     Ola, {firstName}! 👋
                   </h1>
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                </div>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className="bg-rose-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                  <span className="bg-rose-500 text-white px-3 py-0.5 rounded-full text-xs font-medium">
                     Anfitriao
                   </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1 mt-1">
                   <span className="text-sm text-muted-foreground">
-                    Sao Paulo, Brasil
+                    Fernando de Noronha, PE/BR
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    · Membro desde Janeiro 2024
+                    · Membro desde Maio 2025
                   </span>
                 </div>
               </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+                <Bell className="h-5 w-5 text-muted-foreground" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500" />
+              </button>
+              <Link to="/chat" className="relative p-2 rounded-full hover:bg-muted transition-colors">
+                <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              </Link>
+              <Link to="/settings" className="p-2 rounded-full hover:bg-muted transition-colors">
+                <Settings className="h-5 w-5 text-muted-foreground" />
+              </Link>
+              <button
+                onClick={onSignOut}
+                className="p-2 rounded-full hover:bg-muted transition-colors"
+                title="Sair"
+              >
+                <LogOut className="h-5 w-5 text-muted-foreground" />
+              </button>
             </div>
           </div>
         </CardContent>
@@ -414,10 +478,13 @@ function AnfitriaoDashboard({
       </Link>
 
       {/* ---- Integration card ---- */}
-      <Card>
+      <Link to="/bank-integration">
+      <Card className="hover:shadow-md transition-shadow cursor-pointer">
         <CardContent className="p-5">
           <div className="flex items-center gap-3">
-            <DollarSign className="h-6 w-6 text-emerald-500" />
+            <div className="h-10 w-10 rounded-full bg-emerald-50 flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-emerald-600" />
+            </div>
             <div className="flex-1">
               <h4 className="text-sm font-semibold">Integracao Bancaria</h4>
               <p className="text-xs text-muted-foreground">
@@ -430,6 +497,29 @@ function AnfitriaoDashboard({
           </div>
         </CardContent>
       </Card>
+      </Link>
+
+      {/* ---- Credits card ---- */}
+      <Link to="/credits">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-rose-50 flex items-center justify-center">
+                <Zap className="h-5 w-5 text-rose-500" />
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold">Host Credits</h4>
+                <p className="text-xs text-muted-foreground">
+                  Compre creditos para publicar vagas
+                </p>
+              </div>
+              <span className="text-xs text-rose-500 font-medium">
+                5 creditos
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* ---- Stats row ---- */}
       <div className="grid grid-cols-3 gap-4">
@@ -437,49 +527,69 @@ function AnfitriaoDashboard({
           <Card key={s.label}>
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
-                <s.icon className={`h-5 w-5 ${s.color}`} />
+                <div>
+                  <p className="text-xs text-muted-foreground">{s.label}</p>
+                  <p className="text-3xl font-bold mt-1">{s.value}</p>
+                </div>
+                <div className={`h-10 w-10 rounded-lg ${s.bg} flex items-center justify-center`}>
+                  <s.icon className="h-5 w-5 text-white" />
+                </div>
               </div>
-              <p className="text-2xl font-bold mt-3">{s.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
       {/* ---- Candidaturas Recentes ---- */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Candidaturas Recentes</h3>
-            <Link
-              to="/proposals"
-              className="text-xs text-rose-500 hover:underline flex items-center gap-1"
-            >
-              Ver todas <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-tc-text-primary">Candidaturas Recentes</h3>
+          <Link
+            to="/proposals"
+            className="text-sm text-tc-text-secondary hover:underline flex items-center gap-1"
+          >
+            Ver todas <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
 
-          <div className="space-y-4">
-            {mockCandidaturas.map((c) => (
-              <div key={c.name} className="flex items-center gap-3">
-                <Avatar className="h-9 w-9">
-                  <AvatarFallback className="bg-rose-50 text-rose-600 text-xs font-medium">
-                    {c.initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium">{c.name}</p>
+        <div className="space-y-3">
+          {mockCandidaturas.map((c) => (
+            <Card key={c.name} className="hover:shadow-sm transition-shadow">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-12 w-12 shrink-0">
+                    <img src={c.avatar} alt={c.name} className="h-full w-full object-cover rounded-full" />
+                    <AvatarFallback className="bg-rose-50 text-rose-600 text-xs font-medium">
+                      {c.name.split(" ").map(n => n[0]).join("")}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-sm font-medium text-tc-text-primary">{c.name}</span>
+                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusConfig[c.status]}`}>
+                        {c.status}
+                      </span>
+                    </div>
+                    <p className="text-xs text-tc-text-secondary">{c.role}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-tc-text-hint">
+                      <span className="flex items-center gap-0.5">
+                        <span>📍</span> {c.location}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <Star className="h-3 w-3 text-amber-400 fill-amber-400" /> {c.rating}
+                      </span>
+                      <span className="flex items-center gap-0.5">
+                        <Calendar className="h-3 w-3" /> {c.experience}
+                      </span>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-5 w-5 text-tc-text-hint shrink-0" />
                 </div>
-                <span
-                  className={`text-xs font-medium px-2.5 py-0.5 rounded-full ${c.badgeClass}`}
-                >
-                  {c.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -488,7 +598,7 @@ function AnfitriaoDashboard({
 /*  Main Dashboard – role switch                                      */
 /* ------------------------------------------------------------------ */
 const Dashboard = () => {
-  const { profile, organization, userRole, uiRole } = useAuth();
+  const { profile, organization, userRole, uiRole, signOut } = useAuth();
 
   /* ---- existing Supabase queries ---- */
   const { data: requestCount = 0 } = useQuery({
@@ -550,6 +660,7 @@ const Dashboard = () => {
         proposalCount={proposalCount}
         openRequests={openRequests}
         recentRequests={recentRequests}
+        onSignOut={signOut}
       />
     );
   }
@@ -562,6 +673,7 @@ const Dashboard = () => {
       proposalCount={proposalCount}
       openRequests={openRequests}
       recentRequests={recentRequests}
+      onSignOut={signOut}
     />
   );
 };
