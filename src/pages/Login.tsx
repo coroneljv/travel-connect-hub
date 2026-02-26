@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { AuthBackground } from "@/components/AuthBackground";
 import { Logo } from "@/components/Logo";
 
-const Login = () => {
+const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
