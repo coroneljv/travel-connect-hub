@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import {
   List,
@@ -16,8 +16,11 @@ import {
   Plus,
   CheckCircle2,
   X,
+  Loader2,
 } from "lucide-react";
 import CreatePostModal from "@/components/modals/CreatePostModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -368,8 +371,12 @@ const HOST_TYPE_FILTERS = [
 
 function TabFeed({
   onOpenCreatePost,
+  posts,
+  loadingPosts,
 }: {
   onOpenCreatePost: () => void;
+  posts: any[];
+  loadingPosts: boolean;
 }) {
   return (
     <div className="space-y-6">
@@ -390,7 +397,46 @@ function TabFeed({
         </button>
       </div>
 
-      {/* Post cards */}
+      {/* Real posts from Supabase */}
+      {loadingPosts && (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
+          <span className="ml-2 text-sm text-tc-text-hint">Carregando publicações...</span>
+        </div>
+      )}
+
+      {posts.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {posts.map((post) => (
+            <div key={post.id} className="bg-white rounded-xl border border-border p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm">
+                  {post.profiles?.full_name?.[0]?.toUpperCase() || "?"}
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-tc-text-primary">{post.profiles?.full_name || "Usuário"}</p>
+                  {post.location && (
+                    <p className="text-xs text-tc-text-hint">{post.location}</p>
+                  )}
+                </div>
+                <span className="ml-auto text-xs text-tc-text-hint">
+                  {new Date(post.created_at).toLocaleDateString("pt-BR")}
+                </span>
+              </div>
+              {post.image_url && (
+                <img src={post.image_url} alt="" className="w-full rounded-lg object-cover max-h-[300px]" />
+              )}
+              <p className="text-sm text-tc-text-primary">{post.content}</p>
+              <div className="flex items-center gap-4 text-tc-text-hint text-xs">
+                <span>{post.likes_count || 0} curtidas</span>
+                <span>{post.comments_count || 0} comentários</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mock post cards */}
       <div className="flex flex-col gap-4">
         {MOCK_POSTS.map((post) => (
           <div
@@ -898,8 +944,29 @@ function TabAnfitrioes() {
 // ---------------------------------------------------------------------------
 
 export default function Community() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>("feed");
   const [showCreatePost, setShowCreatePost] = useState(false);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const fetchPosts = async () => {
+    setLoadingPosts(true);
+    const { data, error } = await supabase
+      .from("community_posts")
+      .select("*, profiles!community_posts_author_id_fkey(full_name, avatar_url)")
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (!error && data) {
+      setPosts(data);
+    }
+    setLoadingPosts(false);
+  };
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     {
@@ -942,7 +1009,7 @@ export default function Community() {
 
         {/* Tab content */}
         {activeTab === "feed" && (
-          <TabFeed onOpenCreatePost={() => setShowCreatePost(true)} />
+          <TabFeed onOpenCreatePost={() => setShowCreatePost(true)} posts={posts} loadingPosts={loadingPosts} />
         )}
         {activeTab === "viajantes" && <TabViajantes />}
         {activeTab === "anfitrioes" && <TabAnfitrioes />}
@@ -951,7 +1018,7 @@ export default function Community() {
       {/* Create Post Modal */}
       <CreatePostModal
         open={showCreatePost}
-        onClose={() => setShowCreatePost(false)}
+        onClose={() => { setShowCreatePost(false); fetchPosts(); }}
       />
     </div>
   );

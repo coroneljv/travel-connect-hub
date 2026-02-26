@@ -1,83 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Search, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import HostOpportunityCard from "@/components/shared/HostOpportunityCard";
 import EmptyState from "@/components/shared/EmptyState";
 import type { HostOpportunity } from "@/components/shared/HostOpportunityCard";
 
-/* ── Mock data — TODO: substituir por query Supabase ── */
-
-const MOCK_OPPORTUNITIES: HostOpportunity[] = [
-  {
-    id: "opp-1",
-    title: "Recepcionista de Hotel",
-    destination: "Fernando de Noronha, Pernambuco",
-    description: "Gestao da recepcao e servicos aos hospedes.",
-    category: "Intercambio de trabalho",
-    imageUrl:
-      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&h=400&fit=crop",
-    status: "open",
-    candidateCount: 5,
-    viewCount: 89,
-    duration: "1 mes",
-  },
-  {
-    id: "opp-2",
-    title: "Gestor de redes sociais",
-    destination: "Miami, Florida",
-    description:
-      "Gerir a presenca nas redes sociais e a criacao de conteudos",
-    category: "Intercambio de trabalho",
-    imageUrl:
-      "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&h=400&fit=crop",
-    status: "closed",
-    candidateCount: 12,
-    viewCount: 203,
-    duration: "6 meses",
-  },
-  {
-    id: "opp-3",
-    title: "Voluntariado no Eco Lodge",
-    destination: "San Diego, California",
-    description: "Ajuda nas operacoes diarias de um resort a beira-mar",
-    category: "Voluntariado",
-    imageUrl:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
-    status: "closed",
-    candidateCount: 15,
-    viewCount: 278,
-    duration: "4 meses",
-  },
-  {
-    id: "opp-4",
-    title: "Instrutor de Surf",
-    destination: "Florianopolis, SC",
-    description: "Ensinar surf para hospedes iniciantes e intermediarios",
-    category: "Intercambio de trabalho",
-    imageUrl:
-      "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=600&h=400&fit=crop",
-    status: "open",
-    candidateCount: 8,
-    viewCount: 145,
-    duration: "3 meses",
-  },
-  {
-    id: "opp-5",
-    title: "Professor de Yoga",
-    destination: "Ubud, Bali",
-    description: "Aulas diarias de yoga para hospedes do retiro",
-    category: "Voluntariado",
-    imageUrl:
-      "https://images.unsplash.com/photo-1545389336-cf090694435e?w=600&h=400&fit=crop",
-    status: "closed",
-    candidateCount: 20,
-    viewCount: 312,
-    duration: "2 meses",
-  },
+/* ── Fallback images for opportunities without photos ── */
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&h=400&fit=crop",
+  "https://images.unsplash.com/photo-1545389336-cf090694435e?w=600&h=400&fit=crop",
 ];
+
+/** Map a Supabase request row to the HostOpportunity shape */
+function mapToHostOpportunity(row: any, index: number): HostOpportunity {
+  const status: "open" | "closed" = row.status === "open" ? "open" : "closed";
+  const duration = row.duration_min
+    ? row.duration_max ? `${row.duration_min} - ${row.duration_max}` : row.duration_min
+    : "";
+  return {
+    id: row.id,
+    title: row.title,
+    destination: row.destination ?? "",
+    description: row.description,
+    category: row.opportunity_type ?? "Oportunidade",
+    imageUrl: row.photos?.[0] ?? FALLBACK_IMAGES[index % FALLBACK_IMAGES.length],
+    status,
+    candidateCount: 0, // TODO: count from proposals table
+    viewCount: 0,      // TODO: implement view tracking
+    duration,
+  };
+}
 
 type TabKey = "all" | "open" | "closed";
 
@@ -90,18 +50,43 @@ const TABS: { key: TabKey; label: (count: number) => string }[] = [
 /* ── Page ── */
 
 export default function HostOpportunities() {
+  const { organization } = useAuth();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [rawOpportunities, setRawOpportunities] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // TODO: substituir por useQuery + Supabase
-  const isLoading = false;
-  const opportunities = MOCK_OPPORTUNITIES;
+  useEffect(() => {
+    if (organization?.id) {
+      fetchMyOpportunities();
+    } else {
+      setIsLoading(false);
+    }
+  }, [organization?.id]);
+
+  const fetchMyOpportunities = async () => {
+    if (!organization?.id) return;
+    setIsLoading(true);
+    const { data, error } = await supabase
+      .from("requests")
+      .select("*")
+      .eq("organization_id", organization.id)
+      .order("created_at", { ascending: false });
+
+    if (!error && data) {
+      setRawOpportunities(data);
+    }
+    setIsLoading(false);
+  };
+
+  const opportunities: HostOpportunity[] = rawOpportunities.map(mapToHostOpportunity);
 
   /* ── Filtering ── */
+  const searchLower = search.toLowerCase();
   const searchFiltered = opportunities.filter(
     (opp) =>
-      opp.title.toLowerCase().includes(search.toLowerCase()) ||
-      opp.destination.toLowerCase().includes(search.toLowerCase()),
+      opp.title.toLowerCase().includes(searchLower) ||
+      (opp.destination ?? "").toLowerCase().includes(searchLower),
   );
 
   const tabFiltered =

@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Upload, Info, CheckCircle2, MapPin, Building2 } from "lucide-react";
+import { Upload, Info, CheckCircle2, MapPin, Building2, X } from "lucide-react";
 import HostTypeFamilyForm from "@/components/shared/HostTypeFamilyForm";
 import type { HostSignupStep3FamilyData } from "@/components/shared/HostTypeFamilyForm";
 import HostTypeOngForm from "@/components/shared/HostTypeOngForm";
@@ -154,17 +154,6 @@ function toggleChip(list: string[], value: string): string[] {
   return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
 }
 
-function UploadArea({ label, className = "" }: { label: string; className?: string }) {
-  return (
-    <div
-      className={`border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-400 transition-colors bg-gray-50 ${className}`}
-    >
-      <Upload className="w-8 h-8 text-gray-400" />
-      <span className="text-sm text-gray-500 text-center">{label}</span>
-    </div>
-  );
-}
-
 function InfoBox({ children, variant = "default" }: { children: React.ReactNode; variant?: "default" | "purple" }) {
   const base =
     variant === "purple"
@@ -280,8 +269,57 @@ const Register = () => {
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // File uploads: Viajante
+  const [docIdentidade, setDocIdentidade] = useState<File | null>(null);
+  const [selfieDoc, setSelfieDoc] = useState<File | null>(null);
+  const [curriculo, setCurriculo] = useState<File | null>(null);
+  const [profilePhotos, setProfilePhotos] = useState<(File | null)[]>([null, null, null, null, null, null]);
+  const [profilePhotoPreviews, setProfilePhotoPreviews] = useState<(string | null)[]>([null, null, null, null, null, null]);
+
+  // File uploads: Anfitriao
+  const [hostPhotos, setHostPhotos] = useState<File[]>([]);
+  const [hostPhotoPreviews, setHostPhotoPreviews] = useState<string[]>([]);
+
   // Anfitriao: Modal aprovação
   const [showApprovedModal, setShowApprovedModal] = useState(false);
+
+  // ---------------------------------------------------------------------------
+  // File-upload helpers
+  // ---------------------------------------------------------------------------
+
+  const handleProfilePhotoChange = (index: number, file: File | null) => {
+    if (!file) return;
+    const newPhotos = [...profilePhotos];
+    newPhotos[index] = file;
+    setProfilePhotos(newPhotos);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const newPreviews = [...profilePhotoPreviews];
+      newPreviews[index] = e.target?.result as string;
+      setProfilePhotoPreviews(newPreviews);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleHostPhotoAdd = (files: FileList | null) => {
+    if (!files) return;
+    const newFiles = Array.from(files);
+    setHostPhotos((prev) => [...prev, ...newFiles]);
+
+    newFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setHostPhotoPreviews((prev) => [...prev, e.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeHostPhoto = (index: number) => {
+    setHostPhotos((prev) => prev.filter((_, i) => i !== index));
+    setHostPhotoPreviews((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // ---------------------------------------------------------------------------
   // Navigation
@@ -365,12 +403,46 @@ const Register = () => {
     <div className="space-y-5">
       <div>
         <Label className="text-base font-semibold mb-2 block">Documento de Identidade</Label>
-        <UploadArea label="Clique ou arraste para enviar seu documento" />
+        <label className="cursor-pointer block">
+          <input
+            type="file"
+            className="hidden"
+            accept="application/pdf,image/*"
+            onChange={(e) => setDocIdentidade(e.target.files?.[0] ?? null)}
+          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-gray-50">
+            {docIdentidade ? (
+              <span className="text-sm text-green-600 font-medium">{docIdentidade.name}</span>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar seu documento</span>
+              </>
+            )}
+          </div>
+        </label>
       </div>
 
       <div>
         <Label className="text-base font-semibold mb-2 block">Selfie</Label>
-        <UploadArea label="Clique ou arraste para enviar sua selfie" />
+        <label className="cursor-pointer block">
+          <input
+            type="file"
+            className="hidden"
+            accept="image/png,image/jpeg"
+            onChange={(e) => setSelfieDoc(e.target.files?.[0] ?? null)}
+          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-gray-50">
+            {selfieDoc ? (
+              <span className="text-sm text-green-600 font-medium">{selfieDoc.name}</span>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar sua selfie</span>
+              </>
+            )}
+          </div>
+        </label>
       </div>
 
       <div className="space-y-2">
@@ -496,7 +568,24 @@ const Register = () => {
 
       <div>
         <Label className="text-base font-semibold mb-2 block">Curriculo</Label>
-        <UploadArea label="Clique ou arraste para enviar seu curriculo (PDF)" />
+        <label className="cursor-pointer block">
+          <input
+            type="file"
+            className="hidden"
+            accept="application/pdf"
+            onChange={(e) => setCurriculo(e.target.files?.[0] ?? null)}
+          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-gray-50">
+            {curriculo ? (
+              <span className="text-sm text-green-600 font-medium">{curriculo.name}</span>
+            ) : (
+              <>
+                <Upload className="w-8 h-8 text-gray-400" />
+                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar seu curriculo (PDF)</span>
+              </>
+            )}
+          </div>
+        </label>
       </div>
     </div>
   );
@@ -531,12 +620,21 @@ const Register = () => {
         </Label>
         <div className="flex flex-wrap gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 cursor-pointer hover:border-gray-400 transition-colors"
-            >
-              <Upload className="w-5 h-5 text-gray-400" />
-            </div>
+            <label key={i} className="cursor-pointer">
+              <input
+                type="file"
+                className="hidden"
+                accept="image/png,image/jpeg"
+                onChange={(e) => handleProfilePhotoChange(i, e.target.files?.[0] ?? null)}
+              />
+              <div className="w-20 h-20 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center bg-gray-50 hover:border-gray-400 transition-colors overflow-hidden">
+                {profilePhotoPreviews[i] ? (
+                  <img src={profilePhotoPreviews[i]!} alt="" className="w-full h-full object-cover rounded-full" />
+                ) : (
+                  <Upload className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+            </label>
           ))}
         </div>
       </div>
@@ -825,16 +923,40 @@ const Register = () => {
           Fotos do Local<span className="text-rose-500">*</span>{" "}
           <span className="text-sm font-normal text-tc-text-hint">(mínimo 3 fotos)</span>
         </Label>
-        {/* TODO: integrar upload real via Supabase Storage */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-400 transition-colors bg-gray-50">
-          <Upload className="w-8 h-8 text-gray-400" />
-          <span className="text-sm text-tc-text-secondary text-center">
-            Clique para fazer upload ou arraste a imagem
-          </span>
-          <span className="text-xs text-tc-text-hint">PNG, JPG até 5MB</span>
-        </div>
+        <label className="cursor-pointer block">
+          <input
+            type="file"
+            className="hidden"
+            accept="image/png,image/jpeg"
+            multiple
+            onChange={(e) => handleHostPhotoAdd(e.target.files)}
+          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-gray-50">
+            <Upload className="w-8 h-8 text-gray-400" />
+            <span className="text-sm text-tc-text-secondary text-center">
+              Clique para fazer upload ou arraste a imagem
+            </span>
+            <span className="text-xs text-tc-text-hint">PNG, JPG até 5MB</span>
+          </div>
+        </label>
+        {hostPhotoPreviews.length > 0 && (
+          <div className="flex flex-wrap gap-3 mt-3">
+            {hostPhotoPreviews.map((src, i) => (
+              <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+                <img src={src} alt="" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => removeHostPhoto(i)}
+                  className="absolute top-0.5 right-0.5 bg-black/50 text-white rounded-full p-0.5 hover:bg-black/70 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <p className="text-xs text-tc-text-hint mt-2">
-          Fotos adicionadas 0 / Mínimo 3
+          Fotos adicionadas {hostPhotos.length} / Mínimo 3
         </p>
       </div>
 

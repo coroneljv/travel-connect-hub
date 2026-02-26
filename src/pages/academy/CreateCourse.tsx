@@ -31,6 +31,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import CoursePublishedModal from "@/components/modals/CoursePublishedModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { uploadFile, uploadFiles } from "@/lib/storage";
+import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -101,6 +105,8 @@ function emptyQuestion(): QuizQuestion {
 
 export default function CreateCourse() {
   const navigate = useNavigate();
+  const { user, organization } = useAuth();
+  const [isPublishing, setIsPublishing] = useState(false);
 
   /* ---- wizard step ---- */
   const [step, setStep] = useState(0);
@@ -162,8 +168,123 @@ export default function CreateCourse() {
     if (step > 0) setStep(step - 1);
   };
 
-  const handlePublish = () => {
-    setShowPublished(true);
+  const handlePublish = async () => {
+    if (!user || !organization) {
+      toast.error("Você precisa estar logado");
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // Upload cover image
+      let coverImageUrl: string | null = null;
+      if (coverImage) {
+        coverImageUrl = await uploadFile(coverImage, "courses/covers");
+      }
+
+      // Upload instructor photo
+      let instructorPhotoUrl: string | null = null;
+      if (instructorPhoto) {
+        instructorPhotoUrl = await uploadFile(instructorPhoto, "courses/instructors");
+      }
+
+      // Upload support materials
+      let supportMaterialUrls: string[] = [];
+      if (supportMaterials.length > 0) {
+        supportMaterialUrls = await uploadFiles(supportMaterials, "courses/materials");
+      }
+
+      // Build quiz data as JSON
+      const quizData = {
+        moduleQuizzes: moduleQuizzes.filter(q => q.enabled),
+        finalExam: finalExam.enabled ? finalExam : null,
+      };
+
+      // Insert course
+      const { data: courseData, error: courseError } = await supabase
+        .from("courses")
+        .insert({
+          created_by: user.id,
+          organization_id: organization.id,
+          title: titulo,
+          subtitle: subtitulo || null,
+          description: descricao || null,
+          category: categoria || null,
+          subcategory: subcategoria || null,
+          language: idioma || "Português",
+          level: nivel || null,
+          cover_image_url: coverImageUrl,
+          objectives: objetivos.filter(o => o.trim()),
+          prerequisites: requisitos.filter(r => r.trim()),
+          target_audience: publicoAlvo || null,
+          pricing_type: pricingType,
+          currency: moeda,
+          price: pricingType === "paid" && preco ? parseFloat(preco) : 0,
+          instructor_name: user.user_metadata?.full_name || null,
+          instructor_bio: biografia || null,
+          instructor_photo_url: instructorPhotoUrl,
+          instructor_linkedin: linkedin || null,
+          instructor_instagram: instagram || null,
+          instructor_website: website || null,
+          quiz_data: quizData as any,
+          support_material_urls: supportMaterialUrls.length > 0 ? supportMaterialUrls : null,
+          status: "published",
+        } as any)
+        .select("id")
+        .single();
+
+      if (courseError) throw courseError;
+
+      // Insert modules + lessons
+      for (let mi = 0; mi < modules.length; mi++) {
+        const mod = modules[mi];
+        if (!mod.title.trim()) continue;
+
+        const { data: modData, error: modError } = await supabase
+          .from("course_modules")
+          .insert({
+            course_id: courseData.id,
+            title: mod.title,
+            sort_order: mi,
+          } as any)
+          .select("id")
+          .single();
+
+        if (modError) throw modError;
+
+        for (let li = 0; li < mod.lessons.length; li++) {
+          const lesson = mod.lessons[li];
+          if (!lesson.title.trim()) continue;
+
+          let videoUrl: string | null = null;
+          if (lesson.videoFile) {
+            videoUrl = await uploadFile(lesson.videoFile, "courses/videos");
+          }
+
+          let materialUrl: string | null = null;
+          if (lesson.materialFile) {
+            materialUrl = await uploadFile(lesson.materialFile, "courses/lesson-materials");
+          }
+
+          await supabase.from("course_lessons").insert({
+            module_id: modData.id,
+            title: lesson.title,
+            description: lesson.description || null,
+            type: lesson.type || "video",
+            video_url: videoUrl,
+            material_url: materialUrl,
+            sort_order: li,
+          } as any);
+        }
+      }
+
+      toast.success("Curso publicado com sucesso!");
+      setShowPublished(true);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao publicar curso");
+    } finally {
+      setIsPublishing(false);
+    }
   };
 
   const handleClosePublished = () => {
@@ -1378,10 +1499,11 @@ export default function CreateCourse() {
           <button
             type="button"
             onClick={handlePublish}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+            disabled={isPublishing}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
           >
             <Award className="h-4 w-4" />
-            Publicar Curso
+            {isPublishing ? "Publicando..." : "Publicar Curso"}
           </button>
         )}
       </div>

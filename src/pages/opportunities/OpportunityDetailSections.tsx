@@ -120,6 +120,41 @@ function ResponsibilitiesChecklist({ items }: { items: string[] }) {
   );
 }
 
+function SkillsSection({ skills }: { skills: string[] }) {
+  if (skills.length === 0) return null;
+  return (
+    <div>
+      <h3 className="text-base font-medium text-tc-text-primary mb-3">
+        Habilidades Requeridas
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {skills.map((skill) => (
+          <span
+            key={skill}
+            className="px-3 py-1 text-xs font-medium rounded-full bg-navy-500 text-white"
+          >
+            {skill}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HouseRulesSection({ rules }: { rules: string | null }) {
+  if (!rules) return null;
+  return (
+    <div>
+      <h3 className="text-base font-medium text-tc-text-primary mb-2">
+        Regras da Casa
+      </h3>
+      <p className="text-sm leading-relaxed text-tc-text-secondary whitespace-pre-line">
+        {rules}
+      </p>
+    </div>
+  );
+}
+
 export default function OpportunityDetailSections({ opportunity }: Props) {
   return (
     <div className="space-y-5">
@@ -134,6 +169,8 @@ export default function OpportunityDetailSections({ opportunity }: Props) {
       />
       <AboutSection description={opportunity.description} />
       <ResponsibilitiesChecklist items={opportunity.responsibilities} />
+      <SkillsSection skills={opportunity.skills} />
+      <HouseRulesSection rules={opportunity.houseRules} />
     </div>
   );
 }

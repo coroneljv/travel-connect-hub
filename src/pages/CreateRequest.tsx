@@ -26,8 +26,12 @@ import {
   WashingMachine,
   Car,
   Info,
+  X,
 } from "lucide-react";
 import OpportunityPublishedModal from "@/components/modals/OpportunityPublishedModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { uploadFiles } from "@/lib/storage";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -96,9 +100,12 @@ function toggleItem(list: string[], value: string): string[] {
 
 const CreateRequest = () => {
   const navigate = useNavigate();
+  const { user, profile, organization } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPublishedModal, setShowPublishedModal] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
 
   // Step 1: Básico
   const [title, setTitle] = useState("");
@@ -135,11 +142,61 @@ const CreateRequest = () => {
     if (currentStep > 0) setCurrentStep((s) => s - 1);
   };
 
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const validFiles = files.filter(f => f.size <= 5 * 1024 * 1024 && /\.(png|jpe?g)$/i.test(f.name));
+    setPhotos(prev => [...prev, ...validFiles]);
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setPhotoPreviews(prev => [...prev, ev.target?.result as string]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos(prev => prev.filter((_, i) => i !== index));
+    setPhotoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
+    if (!user || !organization) {
+      toast.error("Você precisa estar logado para criar uma oportunidade");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      // TODO: integrar com Supabase — inserir na tabela requests
-      await new Promise((r) => setTimeout(r, 1000));
+      // Upload photos
+      let photoUrls: string[] = [];
+      if (photos.length > 0) {
+        photoUrls = await uploadFiles(photos, "opportunities");
+      }
+
+      const { error } = await supabase.from("requests").insert({
+        organization_id: organization.id,
+        created_by: user.id,
+        title,
+        description,
+        opportunity_type: opportunityType || null,
+        task_description: taskDescription || null,
+        hours_per_day: hoursPerDay ? parseInt(hoursPerDay) : null,
+        days_per_week: daysPerWeek ? parseInt(daysPerWeek) : null,
+        duration_min: durationMin || null,
+        duration_max: durationMax || null,
+        preferred_start_date: preferredStartDate || null,
+        flexible_start_date: flexibleStartDate || null,
+        accommodation_type: accommodationType || null,
+        meals: meals.length > 0 ? meals : null,
+        amenities: amenities.length > 0 ? amenities : null,
+        house_rules: houseRules || null,
+        required_skills: requiredSkills.length > 0 ? requiredSkills : null,
+        photos: photoUrls.length > 0 ? photoUrls : null,
+        status: "open",
+      } as any);
+
+      if (error) throw error;
       setShowPublishedModal(true);
     } catch (error: any) {
       toast.error(error.message || "Erro ao publicar oportunidade");
@@ -467,16 +524,38 @@ const CreateRequest = () => {
           Fotos do Local<span className="text-rose-500">*</span>{" "}
           <span className="text-sm font-normal text-tc-text-hint">(mínimo 3 fotos)</span>
         </Label>
-        {/* TODO: integrar upload real via Supabase Storage */}
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-400 transition-colors bg-gray-50">
+        <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-gray-400 transition-colors bg-gray-50">
           <Upload className="w-8 h-8 text-gray-400" />
           <span className="text-sm text-tc-text-secondary text-center">
             Clique para fazer upload ou arraste a imagem
           </span>
           <span className="text-xs text-tc-text-hint">PNG, JPG até 5MB</span>
-        </div>
+          <input
+            type="file"
+            accept="image/png,image/jpeg"
+            multiple
+            className="hidden"
+            onChange={handlePhotoUpload}
+          />
+        </label>
+        {photoPreviews.length > 0 && (
+          <div className="grid grid-cols-4 gap-2 mt-3">
+            {photoPreviews.map((src, i) => (
+              <div key={i} className="relative group">
+                <img src={src} alt="" className="w-full h-20 object-cover rounded-lg" />
+                <button
+                  type="button"
+                  onClick={() => removePhoto(i)}
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <p className="text-xs text-tc-text-hint mt-2">
-          Fotos adicionadas: 0 / Mínimo: 3
+          Fotos adicionadas: {photos.length} / Mínimo: 3
         </p>
       </div>
 

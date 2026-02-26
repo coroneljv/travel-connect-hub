@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
-import { Globe, Mail, MapPin, Phone } from "lucide-react"
+import { Camera, Globe, Mail, MapPin, Phone } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
 import { supabase } from "@/integrations/supabase/client"
+import { uploadFile } from "@/lib/storage"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 
@@ -24,6 +25,8 @@ const Profile = () => {
   const [fullName, setFullName] = useState("")
   const [position, setPosition] = useState("")
   const [saving, setSaving] = useState(false)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
 
   useEffect(() => {
     if (organization) {
@@ -40,6 +43,15 @@ const Profile = () => {
       setPosition(profile.position ?? "")
     }
   }, [organization, profile])
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarFile(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const handleSave = async () => {
     setSaving(true)
@@ -61,9 +73,15 @@ const Profile = () => {
       }
 
       if (profile?.id) {
+        let avatarUrl = profile?.avatar_url ?? null;
+        if (avatarFile) {
+          const url = await uploadFile(avatarFile, "avatars");
+          if (url) avatarUrl = url;
+        }
+
         const { error: profErr } = await supabase
           .from("profiles")
-          .update({ full_name: fullName, position })
+          .update({ full_name: fullName, position, avatar_url: avatarUrl })
           .eq("id", profile.id)
         if (profErr) throw profErr
       }
@@ -101,9 +119,17 @@ const Profile = () => {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-6 pb-6 border-b">
-                <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold">
-                  {initials}
-                </div>
+                <label className="relative w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary text-2xl font-bold cursor-pointer group overflow-hidden">
+                  {avatarPreview || profile?.avatar_url ? (
+                    <img src={avatarPreview || profile?.avatar_url || ""} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    initials
+                  )}
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded-full">
+                    <Camera className="w-6 h-6 text-white" />
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+                </label>
                 <div>
                   <p className="font-medium">{orgName || "Your Company"}</p>
                   <Badge variant="outline" className="mt-1 capitalize">{userRole ?? "—"}</Badge>

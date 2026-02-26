@@ -14,40 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import OpportunityCard from "./opportunities/OpportunityCard";
 import OpportunityFilters from "./opportunities/OpportunityFilters";
 
-// TODO: mock enrichments — substituir por dados reais do DB
-const MOCK_IMAGES = [
+const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&h=400&fit=crop",
   "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=600&h=400&fit=crop",
   "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
   "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&h=400&fit=crop",
   "https://images.unsplash.com/photo-1545389336-cf090694435e?w=600&h=400&fit=crop",
-];
-
-// TODO: substituir por coluna requests.category quando existir
-const MOCK_CATEGORY: Record<number, "volunteer" | "exchange"> = {
-  0: "volunteer", // Recepcionista
-  1: "volunteer", // Auxiliar Cozinha
-  2: "exchange",  // Guia Turismo
-  3: "exchange",  // Social Media
-  4: "volunteer", // Professor Yoga
-};
-
-const MOCK_TAGS_MAP: Record<number, string[]> = {
-  0: ["Recepcao", "Comunicacao", "Ingles"],
-  1: ["Cozinha", "Sustentabilidade"],
-  2: ["Turismo", "Surf", "Ingles"],
-  3: ["Marketing Digital", "Fotografia"],
-  4: ["Yoga", "Meditacao", "Ingles"],
-};
-const MOCK_MATCH = [95, 92, 90, 88, 85];
-const MOCK_RATING = [4.9, 4.8, 4.7, 4.5, 4.8];
-const MOCK_DURATION = ["1 mes", "3 meses", "3 meses", "3 meses", "2 meses"];
-const MOCK_COMPENSATION = [
-  "Hospedagem + Refeicao",
-  "Hospedagem + Refeicao",
-  "Hospedagem + Cafe",
-  "Hospedagem",
-  "Hospedagem + Refeicao completa",
 ];
 
 const TABS = [
@@ -89,7 +61,7 @@ const Opportunities = () => {
     queryFn: async () => {
       let query = supabase
         .from("requests")
-        .select("*, organizations!requests_organization_id_fkey(name)")
+        .select("*, organizations!requests_organization_id_fkey(name, logo_url, city, state, country)")
         .eq("status", "open")
         .order("created_at", { ascending: false });
 
@@ -114,11 +86,15 @@ const Opportunities = () => {
     });
   };
 
-  // Filter opportunities by active tab
-  const filtered = opportunities.filter((_opp: any, i: number) => {
+  // Filter opportunities by active tab using real opportunity_type
+  const filtered = opportunities.filter((opp: any) => {
     if (activeTab === "all") return true;
-    if (activeTab === "favorites") return favoriteIds.has(_opp.id);
-    return MOCK_CATEGORY[i % 5] === activeTab;
+    if (activeTab === "favorites") return favoriteIds.has(opp.id);
+    // Map DB opportunity_type to tab keys
+    const type = opp.opportunity_type?.toLowerCase() ?? "";
+    if (activeTab === "volunteer") return type.includes("voluntar");
+    if (activeTab === "exchange") return type.includes("intercambio") || type.includes("trabalho") || type.includes("exchange");
+    return true;
   });
 
   const section = SECTION_TITLES[activeTab] ?? SECTION_TITLES.all;
@@ -216,24 +192,41 @@ const Opportunities = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((opp: any, i: number) => {
-              const origIdx = opportunities.indexOf(opp);
+              // Image: real photos first, then fallback
+              const imageUrl = opp.photos?.[0] ?? FALLBACK_IMAGES[i % FALLBACK_IMAGES.length];
+              // Location from org data or destination
+              const orgData = opp.organizations;
+              const location = orgData?.city && orgData?.state
+                ? `${orgData.city}, ${orgData.state}`
+                : opp.destination ?? orgData?.name ?? "";
+              // Compensation from real fields
+              const compensationParts: string[] = [];
+              if (opp.accommodation_type) compensationParts.push(opp.accommodation_type);
+              if (opp.meals?.length) compensationParts.push(opp.meals.join(" + "));
+              const compensationLabel = compensationParts.length > 0
+                ? compensationParts.join(" + ")
+                : "A combinar";
+              // Duration from real fields
+              const duration = opp.duration_min
+                ? opp.duration_max ? `${opp.duration_min} - ${opp.duration_max}` : opp.duration_min
+                : "";
+              // Tags from real skills
+              const tags: string[] = opp.required_skills ?? [];
               return (
                 <OpportunityCard
                   key={opp.id}
                   id={opp.id}
                   title={opp.title}
-                  destination={opp.destination}
+                  destination={location}
                   description={opp.description}
                   start_date={opp.start_date}
                   end_date={opp.end_date}
-                  imageUrl={MOCK_IMAGES[origIdx % MOCK_IMAGES.length]}
-                  matchPercent={MOCK_MATCH[origIdx % MOCK_MATCH.length]}
-                  rating={MOCK_RATING[origIdx % MOCK_RATING.length]}
-                  duration={MOCK_DURATION[origIdx % MOCK_DURATION.length]}
-                  compensationLabel={
-                    MOCK_COMPENSATION[origIdx % MOCK_COMPENSATION.length]
-                  }
-                  tags={MOCK_TAGS_MAP[origIdx % 5] ?? []}
+                  imageUrl={imageUrl}
+                  matchPercent={95}
+                  rating={4.9}
+                  duration={duration}
+                  compensationLabel={compensationLabel}
+                  tags={tags}
                   isFavorite={favoriteIds.has(opp.id)}
                   onToggleFavorite={() => toggleFavorite(opp.id)}
                 />

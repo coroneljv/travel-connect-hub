@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { Image, MapPin, Send } from "lucide-react";
+import { Image, MapPin, Send, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { uploadFile } from "@/lib/storage";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -24,12 +28,62 @@ export default function CreatePostModal({
   open,
   onClose,
 }: CreatePostModalProps) {
+  const { user, profile } = useAuth();
   const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Arquivo muito grande. Máximo 10MB.");
+      return;
+    }
+    setPhoto(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleSubmit = async () => {
+    if (!caption.trim()) {
+      toast.error("Escreva uma legenda para sua publicação");
+      return;
+    }
+    if (!user) return;
+
+    setIsSubmitting(true);
+    try {
+      let imageUrl: string | null = null;
+      if (photo) {
+        imageUrl = await uploadFile(photo, "posts");
+      }
+
+      const { error } = await supabase.from("community_posts").insert({
+        author_id: user.id,
+        content: caption,
+        image_url: imageUrl,
+        location: location || null,
+      });
+
+      if (error) throw error;
+      toast.success("Publicação criada com sucesso!");
+      handleClose();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao criar publicação");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const handleClose = () => {
     setCaption("");
     setLocation("");
+    setPhoto(null);
+    setPhotoPreview(null);
     onClose();
   };
 
@@ -46,24 +100,36 @@ export default function CreatePostModal({
           {/* User info */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm">
-              L
+              {profile?.full_name?.[0]?.toUpperCase() || "?"}
             </div>
             <div>
-              <p className="text-sm font-bold text-tc-text-primary">Luciane</p>
-              <p className="text-xs text-tc-text-hint">Viajante</p>
+              <p className="text-sm font-bold text-tc-text-primary">{profile?.full_name || "Usuário"}</p>
+              <p className="text-xs text-tc-text-hint">Comunidade</p>
             </div>
           </div>
 
           {/* Photo upload area */}
-          <div className="border-2 border-dashed border-border rounded-lg aspect-video flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-rose-300 transition-colors bg-gray-50">
-            <Image className="h-8 w-8 text-tc-text-hint" />
-            <p className="text-sm text-tc-text-secondary font-medium">
-              Clique para adicionar uma foto
-            </p>
-            <p className="text-xs text-tc-text-hint">
-              PNG, JPG, JPEG at\u00e9 10MB
-            </p>
-          </div>
+          <label className="border-2 border-dashed border-border rounded-lg aspect-video flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-rose-300 transition-colors bg-gray-50 overflow-hidden relative">
+            {photoPreview ? (
+              <img src={photoPreview} alt="" className="w-full h-full object-cover absolute inset-0" />
+            ) : (
+              <>
+                <Image className="h-8 w-8 text-tc-text-hint" />
+                <p className="text-sm text-tc-text-secondary font-medium">
+                  Clique para adicionar uma foto
+                </p>
+                <p className="text-xs text-tc-text-hint">
+                  PNG, JPG, JPEG at\u00e9 10MB
+                </p>
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/png,image/jpeg"
+              className="hidden"
+              onChange={handlePhotoSelect}
+            />
+          </label>
 
           {/* Caption */}
           <div className="space-y-2">
@@ -112,10 +178,16 @@ export default function CreatePostModal({
             </button>
             <button
               type="button"
-              className="py-3 rounded-lg font-medium text-white bg-navy-500 hover:bg-navy-600 transition-colors text-sm flex items-center justify-center gap-2"
+              onClick={handleSubmit}
+              disabled={isSubmitting || !caption.trim()}
+              className="py-3 rounded-lg font-medium text-white bg-navy-500 hover:bg-navy-600 transition-colors text-sm flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <Send className="h-4 w-4" />
-              Publicar
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {isSubmitting ? "Publicando..." : "Publicar"}
             </button>
           </div>
         </div>
