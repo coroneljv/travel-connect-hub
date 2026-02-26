@@ -34,6 +34,9 @@ const WatchCourse = lazy(() => import("./pages/academy/WatchCourse"));
 const QuizPage = lazy(() => import("./pages/academy/QuizPage"));
 const CertificatePage = lazy(() => import("./pages/academy/CertificatePage"));
 const CreateCourse = lazy(() => import("./pages/academy/CreateCourse"));
+const Community = lazy(() => import("./pages/community/Community"));
+const TravelerProfile = lazy(() => import("./pages/community/TravelerProfile"));
+const HostProfile = lazy(() => import("./pages/community/HostProfile"));
 
 const queryClient = new QueryClient();
 
@@ -68,7 +71,9 @@ const App = () => (
               <Route path="/academy/create" element={<Suspense fallback={null}><CreateCourse /></Suspense>} />
               <Route path="/reviews" element={<Suspense fallback={null}><Reviews /></Suspense>} />
               <Route path="/anfitriao/candidaturas" element={<Suspense fallback={null}><HostApplications /></Suspense>} />
-              <Route path="/community" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/community" element={<Suspense fallback={null}><Community /></Suspense>} />
+              <Route path="/community/travelers/:id" element={<Suspense fallback={null}><TravelerProfile /></Suspense>} />
+              <Route path="/community/hosts/:id" element={<Suspense fallback={null}><HostProfile /></Suspense>} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/requests" element={<Navigate to="/dashboard" replace />} />
               <Route path="/chat" element={<Suspense fallback={null}><ChatLayout /></Suspense>} />
