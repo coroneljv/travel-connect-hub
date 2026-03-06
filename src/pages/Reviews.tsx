@@ -1,75 +1,75 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, ThumbsUp, MessageSquare, Edit3, MapPin, Calendar, Clock } from "lucide-react";
 import ReviewModal from "@/components/modals/ReviewModal";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ---------------------------------------------------------------------------
-// Mock data — TODO: substituir por query Supabase
+// Types
 // ---------------------------------------------------------------------------
 
-const MOCK_STATS = {
-  averageRating: 4.9,
-  received: 3,
-  given: 2,
-  pending: 1,
-};
+interface ReviewRow {
+  id: string;
+  overall_rating: number;
+  communication_rating: number | null;
+  quality_rating: number | null;
+  reliability_rating: number | null;
+  teamwork_rating: number | null;
+  proactivity_rating: number | null;
+  comment: string | null;
+  would_accept_again: boolean | null;
+  created_at: string | null;
+  reviewer_id: string;
+  reviewed_id: string;
+  request_id: string | null;
+  reviewer_profile?: { full_name: string; avatar_url: string | null; position: string | null } | null;
+  reviewed_profile?: { full_name: string; avatar_url: string | null; position: string | null } | null;
+  request?: { title: string; destination: string | null } | null;
+}
 
-const MOCK_PENDING = {
-  title: "Hostel Receptionist",
-  type: "Voluntariado",
-  location: "Florianópolis, SC",
-  travelerName: "Yuki Tanaka",
-  travelerFlag: "🇯🇵",
-  travelerAvatar:
-    "https://ui-avatars.com/api/?name=Yuki+Tanaka&background=364763&color=fff&size=96",
-  hostName: "por Luciane",
-  date: "14/11/2025",
-  endDate: "Finalizada em 09/12/2024",
-};
+interface MappedReview {
+  id: string;
+  reviewerName: string;
+  reviewerRole: string;
+  reviewerAvatar: string;
+  location: string;
+  date: string;
+  duration?: string;
+  overallRating: number;
+  categories: { name: string; rating: number }[];
+  text: string;
+  wouldReturn?: boolean;
+  strengths?: string[];
+}
 
-const MOCK_RECEIVED_REVIEWS = [
-  {
-    id: "1",
-    reviewerName: "Lívia Nunes Teixeira",
-    reviewerRole: "Recepcionista de Hostel na Praia",
-    reviewerAvatar:
-      "https://ui-avatars.com/api/?name=Livia+Nunes&background=E8836B&color=fff&size=96",
-    location: "Florianópolis, SC",
-    date: "14/11/2025",
-    overallRating: 4.8,
-    categories: [
-      { name: "Comunicação", rating: 5 },
-      { name: "Qualidade", rating: 5 },
-      { name: "Confiabilidade", rating: 5 },
-      { name: "Trabalho em Equipe", rating: 5 },
-      { name: "Iniciativa", rating: 4 },
-    ],
-    text: "Experiência incrível! O Rafael e toda equipe foram extremamente acolhedores desde o primeiro dia. O ambiente de trabalho é profissional mas descontraído. A localização é perfeita, pertinho da praia. Aprendi muito sobre gestão de hostel e fiz amigos do mundo inteiro. Super recomendo!",
-    wouldReturn: true,
-  },
-];
+function mapReviewRow(row: ReviewRow, isReceived: boolean): MappedReview {
+  const profile = isReceived ? row.reviewer_profile : row.reviewed_profile;
+  const name = profile?.full_name ?? "Usuário";
+  const avatar = profile?.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=364763&color=fff&size=96`;
 
-const MOCK_MY_REVIEWS = [
-  {
-    id: "2",
-    reviewerName: "Lívia Nunes Teixeira",
-    reviewerRole: "Recepcionista de Hostel na Praia",
-    reviewerAvatar:
-      "https://ui-avatars.com/api/?name=Livia+Nunes&background=E8836B&color=fff&size=96",
-    location: "Fernando de Noronha, Pernambuco",
-    date: "14/11/2025",
-    duration: "1 mês",
-    overallRating: 4.8,
-    categories: [
-      { name: "Comunicação", rating: 5 },
-      { name: "Qualidade", rating: 5 },
-      { name: "Confiabilidade", rating: 5 },
-      { name: "Trabalho em Equipe", rating: 5 },
-      { name: "Iniciativa", rating: 4 },
-    ],
-    text: "Lívia foi excepcional! Sempre pontual, proativa e com uma energia contagiante. Os hóspedes adoravam conversar com ela e sua fluência em inglês foi um grande diferencial. Recomendamos 100% para outros anfitriões. Seria um prazer recebê-la novamente!",
-    strengths: ["Comunicação", "Pontualidade", "Proatividade"],
-  },
-];
+  const categories: { name: string; rating: number }[] = [];
+  if (row.communication_rating) categories.push({ name: "Comunicação", rating: row.communication_rating });
+  if (row.quality_rating) categories.push({ name: "Qualidade", rating: row.quality_rating });
+  if (row.reliability_rating) categories.push({ name: "Confiabilidade", rating: row.reliability_rating });
+  if (row.teamwork_rating) categories.push({ name: "Trabalho em Equipe", rating: row.teamwork_rating });
+  if (row.proactivity_rating) categories.push({ name: "Iniciativa", rating: row.proactivity_rating });
+
+  const createdAt = row.created_at ? new Date(row.created_at) : new Date();
+  const dateStr = createdAt.toLocaleDateString("pt-BR");
+
+  return {
+    id: row.id,
+    reviewerName: name,
+    reviewerRole: profile?.position ?? row.request?.title ?? "Viajante",
+    reviewerAvatar: avatar,
+    location: row.request?.destination ?? "",
+    date: dateStr,
+    overallRating: row.overall_rating,
+    categories,
+    text: row.comment ?? "",
+    wouldReturn: row.would_accept_again ?? undefined,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -109,6 +109,51 @@ function CategoryBadge({ name, rating }: { name: string; rating: number }) {
 export default function Reviews() {
   const [activeTab, setActiveTab] = useState<"received" | "my">("received");
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const { user } = useAuth();
+
+  const [receivedReviews, setReceivedReviews] = useState<MappedReview[]>([]);
+  const [myReviews, setMyReviews] = useState<MappedReview[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!user) return;
+
+    async function fetchReviews() {
+      setLoading(true);
+
+      // Reviews received (where I am reviewed_id)
+      const { data: received } = await supabase
+        .from("reviews")
+        .select("*, reviewer_profile:profiles!reviews_reviewer_id_fkey(full_name, avatar_url, position), request:requests!reviews_request_id_fkey(title, destination)")
+        .eq("reviewed_id", user!.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      // Reviews given (where I am reviewer_id)
+      const { data: given } = await supabase
+        .from("reviews")
+        .select("*, reviewed_profile:profiles!reviews_reviewed_id_fkey(full_name, avatar_url, position), request:requests!reviews_request_id_fkey(title, destination)")
+        .eq("reviewer_id", user!.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      setReceivedReviews((received ?? []).map((r: any) => mapReviewRow(r, true)));
+      setMyReviews((given ?? []).map((r: any) => mapReviewRow(r, false)));
+      setLoading(false);
+    }
+
+    fetchReviews();
+  }, [user]);
+
+  const avgRating = receivedReviews.length > 0
+    ? (receivedReviews.reduce((sum, r) => sum + r.overallRating, 0) / receivedReviews.length).toFixed(1)
+    : "0";
+  const stats = {
+    averageRating: avgRating,
+    received: receivedReviews.length.toString(),
+    given: myReviews.length.toString(),
+    pending: "0",
+  };
 
   return (
     <div className="space-y-6">
@@ -123,10 +168,10 @@ export default function Reviews() {
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Avaliação Média", value: MOCK_STATS.averageRating.toString(), Icon: Star, color: "text-amber-500" },
-          { label: "Recebidas", value: MOCK_STATS.received.toString(), Icon: ThumbsUp, color: "text-navy-500" },
-          { label: "Feitas", value: MOCK_STATS.given.toString(), Icon: MessageSquare, color: "text-navy-500" },
-          { label: "Pendentes", value: MOCK_STATS.pending.toString(), Icon: Edit3, color: "text-navy-500" },
+          { label: "Avaliação Média", value: stats.averageRating, Icon: Star, color: "text-amber-500" },
+          { label: "Recebidas", value: stats.received, Icon: ThumbsUp, color: "text-navy-500" },
+          { label: "Feitas", value: stats.given, Icon: MessageSquare, color: "text-navy-500" },
+          { label: "Pendentes", value: stats.pending, Icon: Edit3, color: "text-navy-500" },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -139,58 +184,6 @@ export default function Reviews() {
             <stat.Icon className={`h-6 w-6 ${stat.color}`} />
           </div>
         ))}
-      </div>
-
-      {/* Pending review */}
-      <div className="border border-border rounded-lg p-4 bg-white">
-        <p className="text-sm font-semibold text-tc-text-primary flex items-center gap-2 mb-3">
-          <Clock className="h-4 w-4 text-tc-text-hint" />
-          Pendente de Avaliação
-        </p>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src={MOCK_PENDING.travelerAvatar}
-              alt={MOCK_PENDING.travelerName}
-              className="w-10 h-10 rounded-full"
-            />
-            <div>
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-tc-text-primary">
-                  {MOCK_PENDING.title}
-                </p>
-                <span className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-gray-100 text-tc-text-secondary">
-                  {MOCK_PENDING.type}
-                </span>
-              </div>
-              <p className="text-xs text-tc-text-hint">
-                Viajante: {MOCK_PENDING.travelerName} {MOCK_PENDING.travelerFlag}
-              </p>
-            </div>
-          </div>
-          <div className="text-xs text-tc-text-hint text-right">
-            <p className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {MOCK_PENDING.location}
-            </p>
-            <p className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              {MOCK_PENDING.date}
-            </p>
-          </div>
-          <div className="text-xs text-tc-text-hint text-right">
-            <p>{MOCK_PENDING.hostName}</p>
-            <p>{MOCK_PENDING.endDate}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowReviewModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium border border-border rounded-lg hover:bg-gray-50 transition-colors text-tc-text-primary"
-          >
-            <Star className="h-3.5 w-3.5" />
-            Avaliar Agora
-          </button>
-        </div>
       </div>
 
       {/* Tab switcher */}
@@ -222,9 +215,18 @@ export default function Reviews() {
       </div>
 
       {/* Review cards */}
-      {activeTab === "received" ? (
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 bg-white border border-border rounded-lg">
+          <p className="text-tc-text-hint text-sm">Carregando avaliações...</p>
+        </div>
+      ) : activeTab === "received" ? (
+        receivedReviews.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white border border-border rounded-lg">
+            <p className="text-tc-text-hint text-sm">Nenhuma avaliação recebida</p>
+          </div>
+        ) : (
         <div className="space-y-4">
-          {MOCK_RECEIVED_REVIEWS.map((review) => (
+          {receivedReviews.map((review) => (
             <div key={review.id} className="border border-border rounded-lg p-5 bg-white space-y-4">
               {/* Header */}
               <div className="flex items-start justify-between">
@@ -278,9 +280,15 @@ export default function Reviews() {
             </div>
           ))}
         </div>
+        )
       ) : (
+        myReviews.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white border border-border rounded-lg">
+            <p className="text-tc-text-hint text-sm">Nenhuma avaliação feita</p>
+          </div>
+        ) : (
         <div className="space-y-4">
-          {MOCK_MY_REVIEWS.map((review) => (
+          {myReviews.map((review) => (
             <div key={review.id} className="border border-border rounded-lg p-5 bg-white space-y-4">
               {/* Header */}
               <div className="flex items-start justify-between">
@@ -345,6 +353,7 @@ export default function Reviews() {
             </div>
           ))}
         </div>
+        )
       )}
 
       {/* Review Modal */}
@@ -352,11 +361,11 @@ export default function Reviews() {
         open={showReviewModal}
         onClose={() => setShowReviewModal(false)}
         opportunity={{
-          title: MOCK_PENDING.title,
-          type: MOCK_PENDING.type,
-          travelerName: MOCK_PENDING.travelerName,
-          travelerFlag: MOCK_PENDING.travelerFlag,
-          travelerAvatar: MOCK_PENDING.travelerAvatar,
+          title: "",
+          type: "",
+          travelerName: "",
+          travelerFlag: "",
+          travelerAvatar: "",
         }}
       />
     </div>

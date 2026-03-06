@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   ArrowLeft,
   MapPin,
@@ -14,13 +15,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 /* ── Types ── */
 
 interface Language {
   name: string;
   level: string;
-  /** 0–100 for the progress bar */
+  /** 0-100 for the progress bar */
   percent: number;
 }
 
@@ -52,163 +54,6 @@ interface CandidateProfileData {
   skills: string[];
   experiences: Experience[];
 }
-
-/* ── Mock data — TODO: substituir por query Supabase ── */
-
-const MOCK_PROFILES: Record<string, CandidateProfileData> = {
-  "cand-1": {
-    id: "cand-1",
-    name: "Emma Wilson",
-    tagline: "Nomade Digital | Marketing & Hospitalidade | Apaixonada por Intercambio Cultural",
-    location: "Londres, UK",
-    age: 30,
-    email: "emmawilson@email.com",
-    avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop",
-    coverUrl: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1200&h=300&fit=crop",
-    isVerified: true,
-    bio: "Sou uma viajante apaixonada por conhecer novas culturas e fazer conexoes autenticas ao redor do mundo. Com experiencia em marketing digital e hospitalidade, busco oportunidades que combinem trabalho significativo com desenvolvimento pessoal. Acredito que viajar e a melhor forma de aprendizado e estou sempre aberta a novos desafios e experiencias transformadoras.",
-    experienceCount: 7,
-    rating: 5,
-    reviewCount: 24,
-    countryCount: 12,
-    languages: [
-      { name: "Ingles", level: "Nativo", percent: 100 },
-      { name: "Germanico", level: "Fluente", percent: 90 },
-      { name: "Espanhol", level: "Avancado", percent: 75 },
-      { name: "Portugues", level: "Intermediario", percent: 55 },
-    ],
-    skills: [
-      "Marketing Digital",
-      "Ensinar",
-      "Atendimento ao Cliente",
-      "Redes Sociais",
-      "Fotografia",
-      "Comunicacao",
-      "Yoga",
-      "Lideranca",
-    ],
-    experiences: [
-      {
-        title: "Social Media Manager",
-        company: "Eco Lodge Brasil",
-        type: "Intercambio",
-        location: "Fernando de Noronha, Brasil",
-        period: "dez. de 2023 - mai. de 2025",
-        description:
-          "Gerenciamento completo das redes sociais do eco lodge, criacao de conteudo, fotografia e estrategia de marketing digital. Aumento de 150% no engajamento.",
-      },
-      {
-        title: "Recepcionista",
-        company: "Sunset Hostel",
-        type: "Voluntariado",
-        location: "Barcelona, Espanha",
-        period: "jun. de 2022 - nov. de 2023",
-        description:
-          "Recepcao de hospedes internacionais, gestao de reservas e organizacao de eventos sociais no hostel. Atendimento em 4 idiomas.",
-      },
-      {
-        title: "Instrutora de Yoga",
-        company: "Bali Retreat Center",
-        type: "Intercambio",
-        location: "Ubud, Bali",
-        period: "jan. de 2022 - mai. de 2022",
-        description:
-          "Aulas diarias de yoga para hospedes do retiro, meditacao guiada e workshops de bem-estar.",
-      },
-    ],
-  },
-  "cand-2": {
-    id: "cand-2",
-    name: "Sarah Anderson",
-    tagline: "Nomade Digital | Marketing & Hospitalidade | Apaixonada por Intercambio Cultural",
-    location: "Sao Paulo, Brasil",
-    age: 28,
-    email: "sarahanderson@email.com",
-    avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop",
-    coverUrl: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1200&h=300&fit=crop",
-    isVerified: true,
-    bio: "Sou um viajante apaixonado por conhecer novas culturas e fazer conexoes autenticas ao redor do mundo. Com experiencia em marketing digital e hospitalidade, busco oportunidades que combinem trabalho significativo com desenvolvimento pessoal.",
-    experienceCount: 7,
-    rating: 4.9,
-    reviewCount: 28,
-    countryCount: 12,
-    languages: [
-      { name: "Portugues", level: "Nativo", percent: 100 },
-      { name: "Ingles", level: "Fluente", percent: 90 },
-      { name: "Espanhol", level: "Avancado", percent: 75 },
-      { name: "Frances", level: "Intermediario", percent: 55 },
-    ],
-    skills: [
-      "Marketing Digital",
-      "Recepcao",
-      "Atendimento ao Cliente",
-      "Redes Sociais",
-      "Fotografia",
-      "Comunicacao",
-    ],
-    experiences: [
-      {
-        title: "Social Media Manager",
-        company: "Eco Lodge Brasil",
-        type: "Intercambio",
-        location: "Fernando de Noronha, Brasil",
-        period: "dez. de 2023 - mai. de 2025",
-        description:
-          "Gerenciamento completo das redes sociais do eco lodge, criacao de conteudo, fotografia e estrategia de marketing digital.",
-      },
-      {
-        title: "Recepcionista",
-        company: "Beach Hostel Rio",
-        type: "Voluntariado",
-        location: "Rio de Janeiro, Brasil",
-        period: "mar. de 2023 - nov. de 2023",
-        description:
-          "Recepcao de hospedes internacionais, gestao de reservas e organizacao de eventos sociais.",
-      },
-    ],
-  },
-  "cand-3": {
-    id: "cand-3",
-    name: "Lucas Mendes",
-    tagline: "Turismo | Surf | Multilingue | Amante da Natureza",
-    location: "Florianopolis, Brasil",
-    age: 25,
-    email: "lucasmendes@email.com",
-    avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop",
-    coverUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=300&fit=crop",
-    isVerified: true,
-    bio: "Apaixonado por surf e turismo sustentavel. Falo 3 idiomas e adoro trabalhar com pessoas de diferentes culturas. Busco experiencias que unam trabalho e estilo de vida.",
-    experienceCount: 4,
-    rating: 4.6,
-    reviewCount: 8,
-    countryCount: 6,
-    languages: [
-      { name: "Portugues", level: "Nativo", percent: 100 },
-      { name: "Ingles", level: "Fluente", percent: 85 },
-      { name: "Espanhol", level: "Avancado", percent: 70 },
-    ],
-    skills: [
-      "Turismo",
-      "Surf",
-      "Atendimento",
-      "Redes Sociais",
-      "Fotografia",
-    ],
-    experiences: [
-      {
-        title: "Instrutor de Surf",
-        company: "Praia Hostel",
-        type: "Intercambio",
-        location: "Florianopolis, Brasil",
-        period: "jan. de 2024 - presente",
-        description:
-          "Aulas de surf para hospedes, organizacao de passeios e atividades aquaticas.",
-      },
-    ],
-  },
-};
-
-const DEFAULT_PROFILE = MOCK_PROFILES["cand-2"]!;
 
 /* ── Sub-components ── */
 
@@ -289,11 +134,95 @@ export default function CandidateProfile() {
   const { id, candidateId } = useParams<{ id: string; candidateId: string }>();
   const navigate = useNavigate();
 
-  // TODO: substituir por useQuery + Supabase
-  const isLoading = false;
-  const profile = candidateId
-    ? (MOCK_PROFILES[candidateId] ?? DEFAULT_PROFILE)
-    : DEFAULT_PROFILE;
+  const [isLoading, setIsLoading] = useState(true);
+  const [profile, setProfile] = useState<CandidateProfileData | null>(null);
+
+  useEffect(() => {
+    const profileId = candidateId || id;
+    if (!profileId) {
+      setIsLoading(false);
+      return;
+    }
+
+    async function fetchProfile() {
+      setIsLoading(true);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", profileId!)
+        .single();
+
+      if (error || !data) {
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      // Get review stats
+      const { count: reviewCount } = await supabase
+        .from("reviews")
+        .select("*", { count: "exact", head: true })
+        .eq("reviewed_id", profileId!)
+        .is("deleted_at", null);
+
+      const { data: reviewRows } = await supabase
+        .from("reviews")
+        .select("overall_rating")
+        .eq("reviewed_id", profileId!)
+        .is("deleted_at", null);
+
+      const avgRating = reviewRows && reviewRows.length > 0
+        ? reviewRows.reduce((sum, r) => sum + r.overall_rating, 0) / reviewRows.length
+        : 0;
+
+      // Calculate age from date_of_birth
+      let age = 0;
+      if (data.date_of_birth) {
+        const dob = new Date(data.date_of_birth);
+        const now = new Date();
+        age = now.getFullYear() - dob.getFullYear();
+        if (now.getMonth() < dob.getMonth() || (now.getMonth() === dob.getMonth() && now.getDate() < dob.getDate())) {
+          age--;
+        }
+      }
+
+      setProfile({
+        id: data.id,
+        name: data.full_name,
+        tagline: data.position ?? data.travel_style ?? "",
+        location: data.nationality ?? "",
+        age,
+        email: "",
+        avatarUrl: data.avatar_url,
+        coverUrl: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1200&h=300&fit=crop",
+        isVerified: true,
+        bio: data.bio ?? "Nenhuma descricao disponivel",
+        experienceCount: 0,
+        rating: Math.round(avgRating * 10) / 10,
+        reviewCount: reviewCount ?? 0,
+        countryCount: 0,
+        languages: [],
+        skills: [],
+        experiences: [],
+      });
+      setIsLoading(false);
+    }
+
+    fetchProfile();
+  }, [candidateId, id]);
+
+  if (isLoading) return <ProfileSkeleton />;
+
+  if (!profile) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+        <h2 className="text-xl font-semibold text-tc-text-primary">Perfil nao encontrado</h2>
+        <p className="text-tc-text-hint">Este perfil pode ter sido removido ou o link esta incorreto.</p>
+        <Button variant="outline" onClick={() => navigate(-1)}>Voltar</Button>
+      </div>
+    );
+  }
 
   const initials = profile.name
     .split(" ")
@@ -311,8 +240,6 @@ export default function CandidateProfile() {
     // TODO: atualizar status via Supabase
     toast.error(`Candidatura de ${profile.name} rejeitada`);
   };
-
-  if (isLoading) return <ProfileSkeleton />;
 
   return (
     <div className="space-y-6">

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft,
   Play,
@@ -13,76 +14,198 @@ import {
   Award,
   ChevronLeft,
   ChevronRight,
+  Loader2,
+  BookOpen,
+  X,
+  Trophy,
 } from "lucide-react";
 
-interface Lesson {
-  name: string;
-  duration: string;
-  status: "completed" | "current" | "upcoming" | "quiz";
+interface CourseInfo {
+  id: string;
+  title: string;
+  support_material_urls: string[] | null;
 }
 
-const lessons: Lesson[] = [
-  { name: "Introducao ao Curso", duration: "10:30", status: "completed" },
-  {
-    name: "O que e Atendimento de Excelencia?",
-    duration: "15:45",
-    status: "completed",
-  },
-  {
-    name: "Primeiras Impressoes que Marcam",
-    duration: "20:15",
-    status: "completed",
-  },
-  { name: "A Arte da Empatia", duration: "18:30", status: "completed" },
-  {
-    name: "Comunicacao Verbal e Nao-Verbal",
-    duration: "25:20",
-    status: "current",
-  },
-  { name: "Quiz do Modulo 1", duration: "10:00", status: "quiz" },
-  {
-    name: "Escuta Ativa na Pratica",
-    duration: "22:15",
-    status: "upcoming",
-  },
-  {
-    name: "Linguagem Corporal Profissional",
-    duration: "18:45",
-    status: "upcoming",
-  },
-];
-
-interface Resource {
-  name: string;
-  format: string;
-  size: string;
+interface ModuleInfo {
+  id: string;
+  title: string;
+  sort_order: number;
 }
 
-const resources: Resource[] = [
-  { name: "Checklist: Primeira Impressao", format: "PDF", size: "245 KB" },
-  { name: "Templates de Boas-Vindas", format: "PDF", size: "189 KB" },
-  { name: "Exercicio Pratico", format: "PDF", size: "156 KB" },
-];
-
-interface KeyPoint {
-  timestamp: string;
-  label: string;
+interface LessonInfo {
+  id: string;
+  module_id: string;
+  title: string;
+  description: string | null;
+  type: string | null;
+  video_url: string | null;
+  material_url: string | null;
+  duration_minutes: number | null;
+  sort_order: number;
 }
 
-const keyPoints: KeyPoint[] = [
-  { timestamp: "0:45", label: "O poder dos primeiros 7 segundos" },
-  { timestamp: "3:20", label: "Linguagem corporal acolhedora" },
-  { timestamp: "7:15", label: "Sorriso genuino vs. forcado" },
-  { timestamp: "12:30", label: "Recordar nomes dos hospedes" },
-  { timestamp: "16:45", label: "Checklist de boas-vindas" },
-];
+interface FlatLesson {
+  id: string;
+  moduleId: string;
+  moduleTitle: string;
+  title: string;
+  description: string | null;
+  type: string | null;
+  video_url: string | null;
+  material_url: string | null;
+  duration_minutes: number | null;
+  status: "upcoming" | "current";
+}
 
 export default function WatchCourse() {
   const { id } = useParams();
   const [activeTab, setActiveTab] = useState<"content" | "resources">(
     "content"
   );
-  const [currentLessonIndex, setCurrentLessonIndex] = useState(4);
+  const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
+  const [course, setCourse] = useState<CourseInfo | null>(null);
+  const [flatLessons, setFlatLessons] = useState<FlatLesson[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [showCertificate, setShowCertificate] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+      if (!id) return;
+      setLoading(true);
+
+      // Fetch course
+      const { data: courseData } = await supabase
+        .from("courses")
+        .select("id, title, support_material_urls")
+        .eq("id", id)
+        .is("deleted_at", null)
+        .single();
+
+      if (!courseData) {
+        setLoading(false);
+        return;
+      }
+      setCourse(courseData);
+
+      // Fetch modules
+      const { data: modulesData } = await supabase
+        .from("course_modules")
+        .select("*")
+        .eq("course_id", id)
+        .order("sort_order", { ascending: true });
+
+      const modulesList: ModuleInfo[] = (modulesData || []) as ModuleInfo[];
+
+      // Fetch lessons
+      const moduleIds = modulesList.map((m) => m.id);
+      let lessonsData: LessonInfo[] = [];
+      if (moduleIds.length > 0) {
+        const { data } = await supabase
+          .from("course_lessons")
+          .select("*")
+          .in("module_id", moduleIds)
+          .order("sort_order", { ascending: true });
+        lessonsData = (data || []) as LessonInfo[];
+      }
+
+      // Build flat list of lessons ordered by module then lesson sort_order
+      const lessonsByModule: Record<string, LessonInfo[]> = {};
+      for (const l of lessonsData) {
+        if (!lessonsByModule[l.module_id]) lessonsByModule[l.module_id] = [];
+        lessonsByModule[l.module_id].push(l);
+      }
+
+      const flat: FlatLesson[] = [];
+      for (const mod of modulesList) {
+        const modLessons = lessonsByModule[mod.id] || [];
+        for (const lesson of modLessons) {
+          flat.push({
+            id: lesson.id,
+            moduleId: mod.id,
+            moduleTitle: mod.title,
+            title: lesson.title,
+            description: lesson.description,
+            type: lesson.type,
+            video_url: lesson.video_url,
+            material_url: lesson.material_url,
+            duration_minutes: lesson.duration_minutes,
+            status: flat.length === 0 ? "current" : "upcoming",
+          });
+        }
+      }
+
+      setFlatLessons(flat);
+      setLoading(false);
+    }
+    fetchData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 text-center">
+        <BookOpen className="h-12 w-12 text-tc-text-hint mb-4" />
+        <p className="text-tc-text-secondary text-lg font-medium mb-2">
+          Curso nao encontrado
+        </p>
+        <Link
+          to="/academy"
+          className="text-rose-500 hover:text-rose-600 text-sm font-medium"
+        >
+          Voltar aos cursos
+        </Link>
+      </div>
+    );
+  }
+
+  const currentLesson = flatLessons[currentLessonIndex] || null;
+  const totalLessons = flatLessons.length;
+  const completedCount = completedLessons.size;
+  const progressPercent =
+    totalLessons > 0
+      ? Math.round((completedCount / totalLessons) * 100)
+      : 0;
+  const allCompleted = totalLessons > 0 && completedCount === totalLessons;
+
+  const handleCompleteLesson = () => {
+    if (!currentLesson) return;
+    const next = new Set(completedLessons);
+    next.add(currentLesson.id);
+    setCompletedLessons(next);
+
+    // If all lessons are now completed, show certificate
+    if (next.size === totalLessons) {
+      setShowCertificate(true);
+      return;
+    }
+
+    // Advance to the next incomplete lesson
+    if (currentLessonIndex < flatLessons.length - 1) {
+      setCurrentLessonIndex(currentLessonIndex + 1);
+    }
+  };
+
+  // Build resources list
+  const resources: { name: string; url: string }[] = [];
+  if (course.support_material_urls) {
+    course.support_material_urls.forEach((url, i) => {
+      const filename = url.split("/").pop() || `Material ${i + 1}`;
+      resources.push({ name: filename, url });
+    });
+  }
+  if (currentLesson?.material_url) {
+    const filename =
+      currentLesson.material_url.split("/").pop() || "Material da aula";
+    resources.push({ name: filename, url: currentLesson.material_url });
+  }
 
   return (
     <div className="min-h-screen bg-warm-gray">
@@ -101,262 +224,351 @@ export default function WatchCourse() {
           {/* Center: course title + lesson info */}
           <div className="hidden md:flex flex-col items-center">
             <span className="text-sm font-bold text-tc-text-primary">
-              Atendimento ao Cliente de Excelencia
+              {course.title}
             </span>
             <span className="text-sm text-tc-text-hint">
-              Aula 4 de 24 &bull; Modulo 1: Fundamentos do Atendimento
+              Aula {currentLessonIndex + 1} de {totalLessons}
+              {currentLesson
+                ? ` \u2022 ${currentLesson.moduleTitle}`
+                : ""}
             </span>
           </div>
 
           {/* Right: progress badge */}
           <span className="bg-rose-500 text-white text-xs font-medium rounded-lg px-3 py-1">
-            13% Completo
+            {progressPercent}% Completo
           </span>
         </div>
       </div>
 
       {/* ---- Main area ---- */}
       <div className="max-w-[1440px] mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* ========== Left column - Video + Info ========== */}
-          <div className="flex-1 lg:w-[65%] space-y-4">
-            {/* Video placeholder */}
-            <div className="relative">
-              <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=1280&h=720&fit=crop"
-                  alt="Aula em andamento"
-                  className="w-full h-full object-cover opacity-80"
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors">
-                    <Play className="h-8 w-8 text-white fill-white" />
-                  </div>
+        {flatLessons.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 text-center">
+            <BookOpen className="h-12 w-12 text-tc-text-hint mb-4" />
+            <p className="text-tc-text-secondary text-sm">
+              Este curso ainda nao possui aulas
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* ========== Left column - Video + Info ========== */}
+            <div className="flex-1 lg:w-[65%] space-y-4">
+              {/* Video player */}
+              <div className="relative">
+                <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden">
+                  {currentLesson?.video_url ? (
+                    <video
+                      key={currentLesson.video_url}
+                      src={currentLesson.video_url}
+                      controls
+                      className="w-full h-full"
+                    />
+                  ) : (
+                    <>
+                      <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                        <div className="text-center">
+                          <Play className="h-16 w-16 text-white/40 mx-auto mb-2" />
+                          <p className="text-white/50 text-sm">
+                            Video nao disponivel para esta aula
+                          </p>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full h-1 bg-gray-700 rounded-b-lg overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-b-lg"
+                    style={{ width: `${progressPercent}%` }}
+                  />
                 </div>
               </div>
 
-              {/* Progress bar */}
-              <div className="w-full h-1 bg-gray-700 rounded-b-lg overflow-hidden">
-                <div
-                  className="h-full bg-emerald-500 rounded-b-lg"
-                  style={{ width: "25%" }}
-                />
+              {/* Video controls bar */}
+              <div className="bg-white rounded-lg border border-border px-4 py-2.5 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <button
+                    className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                    onClick={() =>
+                      setCurrentLessonIndex((i) => Math.max(0, i - 1))
+                    }
+                  >
+                    <SkipBack className="h-4 w-4 text-tc-text-secondary" />
+                  </button>
+                  <button className="p-1.5 rounded-full bg-navy-500 hover:bg-navy-600 transition-colors">
+                    <Play className="h-4 w-4 text-white fill-white" />
+                  </button>
+                  <button
+                    className="p-1.5 rounded hover:bg-gray-100 transition-colors"
+                    onClick={() =>
+                      setCurrentLessonIndex((i) =>
+                        Math.min(flatLessons.length - 1, i + 1)
+                      )
+                    }
+                  >
+                    <SkipForward className="h-4 w-4 text-tc-text-secondary" />
+                  </button>
+                  <button className="p-1.5 rounded hover:bg-gray-100 transition-colors">
+                    <Volume2 className="h-4 w-4 text-tc-text-secondary" />
+                  </button>
+                  <span className="text-xs text-tc-text-hint font-medium ml-1">
+                    {currentLesson?.duration_minutes
+                      ? `${currentLesson.duration_minutes} min`
+                      : "--:--"}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium text-tc-text-secondary bg-gray-100 rounded px-2 py-0.5">
+                    1.0x
+                  </span>
+                  <button className="p-1.5 rounded hover:bg-gray-100 transition-colors">
+                    <Maximize className="h-4 w-4 text-tc-text-secondary" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Lesson title + description */}
+              <div className="bg-white rounded-lg border border-border p-5 space-y-4">
+                <h2 className="text-lg font-medium text-tc-text-primary">
+                  {currentLesson?.title || "Aula"}
+                </h2>
+                {currentLesson?.description && (
+                  <p className="text-sm text-tc-text-secondary leading-relaxed">
+                    {currentLesson.description}
+                  </p>
+                )}
+
+                {/* Complete button */}
+                <button
+                  onClick={handleCompleteLesson}
+                  disabled={currentLesson ? completedLessons.has(currentLesson.id) : false}
+                  className={`w-full font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors ${
+                    currentLesson && completedLessons.has(currentLesson.id)
+                      ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                      : "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  }`}
+                >
+                  <CheckCircle2 className="h-5 w-5" />
+                  {currentLesson && completedLessons.has(currentLesson.id)
+                    ? "Aula Concluida"
+                    : "Concluir e Continuar"}
+                </button>
+
+                {/* Bottom navigation */}
+                <div className="flex items-center justify-between pt-2">
+                  <button
+                    onClick={() =>
+                      setCurrentLessonIndex((i) => Math.max(0, i - 1))
+                    }
+                    disabled={currentLessonIndex === 0}
+                    className="flex items-center gap-2 text-sm font-medium text-tc-text-secondary border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    Aula Anterior
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentLessonIndex((i) =>
+                        Math.min(flatLessons.length - 1, i + 1)
+                      )
+                    }
+                    disabled={currentLessonIndex >= flatLessons.length - 1}
+                    className="flex items-center gap-2 text-sm font-medium text-white bg-navy-500 hover:bg-navy-600 rounded-lg px-4 py-2 transition-colors disabled:opacity-50"
+                  >
+                    Proxima Aula
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Video controls bar */}
-            <div className="bg-white rounded-lg border border-border px-4 py-2.5 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button className="p-1.5 rounded hover:bg-gray-100 transition-colors">
-                  <SkipBack className="h-4 w-4 text-tc-text-secondary" />
-                </button>
-                <button className="p-1.5 rounded-full bg-navy-500 hover:bg-navy-600 transition-colors">
-                  <Play className="h-4 w-4 text-white fill-white" />
-                </button>
-                <button className="p-1.5 rounded hover:bg-gray-100 transition-colors">
-                  <SkipForward className="h-4 w-4 text-tc-text-secondary" />
-                </button>
-                <button className="p-1.5 rounded hover:bg-gray-100 transition-colors">
-                  <Volume2 className="h-4 w-4 text-tc-text-secondary" />
-                </button>
-                <span className="text-xs text-tc-text-hint font-medium ml-1">
-                  5:04 / 20:15
-                </span>
-              </div>
+            {/* ========== Right column - Sidebar ========== */}
+            <div className="lg:w-[35%]">
+              <div className="bg-white rounded-lg border border-border">
+                {/* Tab switcher */}
+                <div className="flex border-b border-border">
+                  <button
+                    onClick={() => setActiveTab("content")}
+                    className={`flex-1 text-sm font-medium py-3 text-center transition-colors ${
+                      activeTab === "content"
+                        ? "text-navy-500 border-b-2 border-navy-500"
+                        : "text-tc-text-hint hover:text-tc-text-secondary"
+                    }`}
+                  >
+                    Conteudo
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("resources")}
+                    className={`flex-1 text-sm font-medium py-3 text-center transition-colors ${
+                      activeTab === "resources"
+                        ? "text-navy-500 border-b-2 border-navy-500"
+                        : "text-tc-text-hint hover:text-tc-text-secondary"
+                    }`}
+                  >
+                    Recursos
+                  </button>
+                </div>
 
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-medium text-tc-text-secondary bg-gray-100 rounded px-2 py-0.5">
-                  1.0x
-                </span>
-                <button className="p-1.5 rounded hover:bg-gray-100 transition-colors">
-                  <Maximize className="h-4 w-4 text-tc-text-secondary" />
-                </button>
-              </div>
-            </div>
+                {/* Tab content */}
+                <div className="p-4">
+                  {activeTab === "content" && (
+                    <div className="space-y-1">
+                      {flatLessons.map((lesson, index) => {
+                        const isCurrent = index === currentLessonIndex;
 
-            {/* Lesson title + description */}
-            <div className="bg-white rounded-lg border border-border p-5 space-y-4">
-              <h2 className="text-lg font-medium text-tc-text-primary">
-                Excelencia em Momentos Criticos
-              </h2>
-              <p className="text-sm text-tc-text-secondary leading-relaxed">
-                Aprenda como lidar com situacoes dificeis e criticas com
-                profissionalismo e eficacia, transformando desafios em
-                oportunidades para impressionar os hospedes e fortalecer a
-                reputacao do seu estabelecimento.
-              </p>
+                        return (
+                          <button
+                            key={lesson.id}
+                            onClick={() => setCurrentLessonIndex(index)}
+                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                              isCurrent
+                                ? "bg-navy-50 border-l-[3px] border-l-navy-500"
+                                : "hover:bg-gray-50"
+                            }`}
+                          >
+                            {/* Status icon */}
+                            <div className="shrink-0">
+                              {completedLessons.has(lesson.id) ? (
+                                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                              ) : isCurrent ? (
+                                <Play className="h-5 w-5 text-navy-500 fill-navy-500" />
+                              ) : lesson.type === "quiz" ? (
+                                <Award className="h-5 w-5 text-amber-500" />
+                              ) : (
+                                <Play className="h-5 w-5 text-tc-text-hint" />
+                              )}
+                            </div>
 
-              {/* Info badge */}
-              <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
-                <p className="text-sm text-amber-800">
-                  <span className="mr-1">&#127891;</span>
-                  Ultima aula de conteudo! Apos concluir, voce fara o quiz e a
-                  prova final{" "}
-                  <span className="ml-1">&#127919;</span>
-                </p>
-              </div>
+                            {/* Lesson info */}
+                            <div className="flex-1 min-w-0">
+                              <p
+                                className={`text-sm truncate ${
+                                  isCurrent
+                                    ? "font-medium text-navy-600"
+                                    : "text-tc-text-primary"
+                                }`}
+                              >
+                                {lesson.title}
+                              </p>
+                            </div>
 
-              {/* Complete button */}
-              <button className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors">
-                <CheckCircle2 className="h-5 w-5" />
-                Concluir e Continuar
-              </button>
+                            {/* Duration */}
+                            <span className="text-xs text-tc-text-hint shrink-0 flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {lesson.duration_minutes
+                                ? `${lesson.duration_minutes} min`
+                                : "--"}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
 
-              {/* Bottom navigation */}
-              <div className="flex items-center justify-between pt-2">
-                <button className="flex items-center gap-2 text-sm font-medium text-tc-text-secondary border border-gray-300 rounded-lg px-4 py-2 hover:bg-gray-50 transition-colors">
-                  <ChevronLeft className="h-4 w-4" />
-                  Aula Anterior
-                </button>
-                <button className="flex items-center gap-2 text-sm font-medium text-white bg-navy-500 hover:bg-navy-600 rounded-lg px-4 py-2 transition-colors">
-                  Ir para o Quiz Final
-                  <ChevronRight className="h-4 w-4" />
-                </button>
+                  {activeTab === "resources" && (
+                    <div className="space-y-6">
+                      {/* Material de Apoio */}
+                      <div>
+                        <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
+                          Material de Apoio
+                        </h3>
+                        {resources.length === 0 ? (
+                          <p className="text-sm text-tc-text-hint py-4 text-center">
+                            Nenhum material disponivel
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {resources.map((resource, index) => (
+                              <a
+                                key={index}
+                                href={resource.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center justify-between border border-border rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
+                              >
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium text-tc-text-primary truncate">
+                                    {resource.name}
+                                  </p>
+                                </div>
+                                <Download className="h-4 w-4 text-tc-text-hint shrink-0 ml-3" />
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
+        )}
+      </div>
+      {/* ---- Certificate Modal ---- */}
+      {showCertificate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-8 text-center relative">
+            <button
+              onClick={() => setShowCertificate(false)}
+              className="absolute top-4 right-4 p-1 rounded-full hover:bg-gray-100 transition-colors"
+            >
+              <X className="h-5 w-5 text-tc-text-hint" />
+            </button>
 
-          {/* ========== Right column - Sidebar ========== */}
-          <div className="lg:w-[35%]">
-            <div className="bg-white rounded-lg border border-border">
-              {/* Tab switcher */}
-              <div className="flex border-b border-border">
-                <button
-                  onClick={() => setActiveTab("content")}
-                  className={`flex-1 text-sm font-medium py-3 text-center transition-colors ${
-                    activeTab === "content"
-                      ? "text-navy-500 border-b-2 border-navy-500"
-                      : "text-tc-text-hint hover:text-tc-text-secondary"
-                  }`}
-                >
-                  Conteudo
-                </button>
-                <button
-                  onClick={() => setActiveTab("resources")}
-                  className={`flex-1 text-sm font-medium py-3 text-center transition-colors ${
-                    activeTab === "resources"
-                      ? "text-navy-500 border-b-2 border-navy-500"
-                      : "text-tc-text-hint hover:text-tc-text-secondary"
-                  }`}
-                >
-                  Recursos
-                </button>
-              </div>
+            <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+              <Trophy className="h-8 w-8 text-emerald-600" />
+            </div>
 
-              {/* Tab content */}
-              <div className="p-4">
-                {activeTab === "content" && (
-                  <div className="space-y-1">
-                    {lessons.map((lesson, index) => {
-                      const isCurrent = index === currentLessonIndex;
+            <h2 className="text-xl font-bold text-tc-text-primary mb-2">
+              Parabens! Curso Concluido!
+            </h2>
+            <p className="text-sm text-tc-text-secondary mb-6">
+              Voce completou todas as {totalLessons} aulas do curso{" "}
+              <span className="font-medium text-tc-text-primary">
+                {course.title}
+              </span>
+              . Seu certificado esta disponivel.
+            </p>
 
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => setCurrentLessonIndex(index)}
-                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
-                            isCurrent
-                              ? "bg-navy-50 border-l-[3px] border-l-navy-500"
-                              : "hover:bg-gray-50"
-                          }`}
-                        >
-                          {/* Status icon */}
-                          <div className="shrink-0">
-                            {lesson.status === "completed" && (
-                              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                            )}
-                            {lesson.status === "current" && (
-                              <Play className="h-5 w-5 text-navy-500 fill-navy-500" />
-                            )}
-                            {lesson.status === "upcoming" && (
-                              <Play className="h-5 w-5 text-tc-text-hint" />
-                            )}
-                            {lesson.status === "quiz" && (
-                              <Award className="h-5 w-5 text-amber-500" />
-                            )}
-                          </div>
+            <div className="border border-border rounded-lg p-6 mb-6 bg-warm-gray">
+              <Award className="h-10 w-10 text-navy-500 mx-auto mb-3" />
+              <p className="text-xs text-tc-text-hint uppercase tracking-wider mb-1">
+                Certificado de Conclusao
+              </p>
+              <p className="text-base font-semibold text-tc-text-primary">
+                {course.title}
+              </p>
+              <p className="text-xs text-tc-text-hint mt-1">
+                {new Date().toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
 
-                          {/* Lesson info */}
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-sm truncate ${
-                                isCurrent
-                                  ? "font-medium text-navy-600"
-                                  : lesson.status === "completed"
-                                  ? "text-tc-text-secondary"
-                                  : "text-tc-text-primary"
-                              }`}
-                            >
-                              {lesson.name}
-                            </p>
-                          </div>
-
-                          {/* Duration */}
-                          <span className="text-xs text-tc-text-hint shrink-0 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {lesson.duration}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {activeTab === "resources" && (
-                  <div className="space-y-6">
-                    {/* Material de Apoio */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
-                        Material de Apoio
-                      </h3>
-                      <div className="space-y-2">
-                        {resources.map((resource, index) => (
-                          <div
-                            key={index}
-                            className="flex items-center justify-between border border-border rounded-lg px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer"
-                          >
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-tc-text-primary truncate">
-                                {resource.name}
-                              </p>
-                              <p className="text-xs text-tc-text-hint">
-                                {resource.format} &bull; {resource.size}
-                              </p>
-                            </div>
-                            <Download className="h-4 w-4 text-tc-text-hint shrink-0 ml-3" />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Pontos-Chave da Aula */}
-                    <div>
-                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
-                        Pontos-Chave da Aula
-                      </h3>
-                      <div className="space-y-2">
-                        {keyPoints.map((point, index) => (
-                          <button
-                            key={index}
-                            className="w-full flex items-center gap-3 text-left hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
-                          >
-                            <span className="shrink-0 text-xs font-medium text-emerald-700 bg-emerald-100 rounded px-2 py-0.5">
-                              {point.timestamp}
-                            </span>
-                            <span className="text-sm text-tc-text-secondary">
-                              {point.label}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="flex gap-3">
+              <Link
+                to="/academy"
+                className="flex-1 py-2.5 px-4 text-sm font-medium text-tc-text-secondary border border-border rounded-lg hover:bg-gray-50 transition-colors text-center"
+              >
+                Voltar aos Cursos
+              </Link>
+              <button
+                onClick={() => setShowCertificate(false)}
+                className="flex-1 py-2.5 px-4 text-sm font-medium text-white bg-navy-500 hover:bg-navy-600 rounded-lg transition-colors"
+              >
+                Ver Certificado
+              </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -116,11 +116,11 @@ function buildFromRow(row: any): OpportunityDetail {
 
     images,
     category,
-    rating: 4.9, // TODO: compute from reviews table
-    reviewCount: 0, // TODO: count from reviews table
+    rating: 0,
+    reviewCount: 0,
     duration,
-    matchPercent: 95, // TODO: compute via matching algorithm
-    minMatchPercent: 75,
+    matchPercent: 0,
+    minMatchPercent: 0,
     isEligible: true,
     compensationType,
     workHours,
@@ -128,7 +128,7 @@ function buildFromRow(row: any): OpportunityDetail {
     skills,
     tipText:
       "Entre em contato com o anfitriao antes de se candidatar para tirar duvidas e se destacar!",
-    superLikeCredits: 5,
+    superLikeCredits: 0,
     houseRules: row.house_rules ?? null,
   };
 }

@@ -222,8 +222,8 @@ const Opportunities = () => {
                   start_date={opp.start_date}
                   end_date={opp.end_date}
                   imageUrl={imageUrl}
-                  matchPercent={95}
-                  rating={4.9}
+                  matchPercent={0}
+                  rating={0}
                   duration={duration}
                   compensationLabel={compensationLabel}
                   tags={tags}

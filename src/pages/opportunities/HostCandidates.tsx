@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import { ArrowLeft, MapPin, Users, Eye, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -6,8 +7,9 @@ import { toast } from "sonner";
 import CandidateCard from "@/components/shared/CandidateCard";
 import EmptyState from "@/components/shared/EmptyState";
 import type { Candidate } from "@/components/shared/CandidateCard";
+import { supabase } from "@/integrations/supabase/client";
 
-/* ── Mock opportunity summary — TODO: substituir por query Supabase ── */
+/* ── Types ── */
 
 interface OpportunitySummary {
   title: string;
@@ -21,166 +23,87 @@ interface OpportunitySummary {
   duration: string;
 }
 
-const MOCK_SUMMARIES: Record<string, OpportunitySummary> = {
-  "opp-1": {
-    title: "Recepcionista de Hotel",
-    destination: "Fernando de Noronha, Pernambuco",
-    description: "Recepcao dos clientes e apoio nas demais funcoes",
-    category: "Voluntariado",
-    status: "open",
-    imageUrl: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&h=400&fit=crop",
-    candidateCount: 8,
-    viewCount: 156,
-    duration: "3 meses",
-  },
-  "opp-2": {
-    title: "Gestor de redes sociais",
-    destination: "Miami, Florida",
-    description: "Gerir a presenca nas redes sociais e a criacao de conteudos",
-    category: "Intercambio de trabalho",
-    status: "closed",
-    imageUrl: "https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&h=400&fit=crop",
-    candidateCount: 12,
-    viewCount: 203,
-    duration: "6 meses",
-  },
-  "opp-3": {
-    title: "Voluntariado no Eco Lodge",
-    destination: "San Diego, California",
-    description: "Ajuda nas operacoes diarias de um resort a beira-mar",
-    category: "Voluntariado",
-    status: "closed",
-    imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
-    candidateCount: 15,
-    viewCount: 278,
-    duration: "4 meses",
-  },
-  "opp-4": {
-    title: "Instrutor de Surf",
-    destination: "Florianopolis, SC",
-    description: "Ensinar surf para hospedes iniciantes e intermediarios",
-    category: "Intercambio de trabalho",
-    status: "open",
-    imageUrl: "https://images.unsplash.com/photo-1510798831971-661eb04b3739?w=600&h=400&fit=crop",
-    candidateCount: 8,
-    viewCount: 145,
-    duration: "3 meses",
-  },
-  "opp-5": {
-    title: "Professor de Yoga",
-    destination: "Ubud, Bali",
-    description: "Aulas diarias de yoga para hospedes do retiro",
-    category: "Voluntariado",
-    status: "closed",
-    imageUrl: "https://images.unsplash.com/photo-1545389336-cf090694435e?w=600&h=400&fit=crop",
-    candidateCount: 20,
-    viewCount: 312,
-    duration: "2 meses",
-  },
-};
-
-/* ── Mock candidates — TODO: substituir por query Supabase ── */
-
-const MOCK_CANDIDATES: Record<string, Candidate[]> = {
-  "opp-1": [
-    {
-      id: "cand-1",
-      name: "Emma Wilson",
-      age: 30,
-      location: "UK",
-      avatarUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop",
-      rating: 5,
-      reviewCount: 24,
-      matchPercent: 75,
-      hasLiked: true,
-      status: "rejected",
-      applicationDate: "10/12/2025",
-      desiredStartDate: "10/01/2026",
-      duration: "3 meses",
-      languages: ["Germanico", "Ingles"],
-      skills: ["Marketing Digital", "Ensinar", "Atendimento ao Cliente", "Redes Sociais"],
-      requiredSkills: [
-        { label: "Atendimento ao Cliente", met: true },
-        { label: "Comunicacao", met: true },
-      ],
-      optionalSkills: [
-        { label: "Redes Sociais", met: false },
-        { label: "Fotografia", met: false },
-        { label: "Experiencia Hotel", met: false },
-      ],
-      message:
-        "Tenho uma vasta experiencia a trabalhar com animais e adoraria ajudar a cuidar das suas galinhas, cabras e abelhas. Tambem sou instrutora de ioga certificada.",
-    },
-    {
-      id: "cand-2",
-      name: "Sarah Anderson",
-      age: 28,
-      location: "Canada",
-      avatarUrl: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop",
-      rating: 4.8,
-      reviewCount: 12,
-      matchPercent: 95,
-      hasLiked: false,
-      status: "pending",
-      applicationDate: "10/12/2025",
-      desiredStartDate: "15/01/2026",
-      duration: "2 meses",
-      languages: ["Ingles", "Frances"],
-      skills: ["Recepcao", "Comunicacao", "Ingles Fluente"],
-      requiredSkills: [
-        { label: "Atendimento ao Cliente", met: true },
-        { label: "Comunicacao", met: true },
-      ],
-      optionalSkills: [
-        { label: "Redes Sociais", met: true },
-        { label: "Fotografia", met: false },
-      ],
-      message:
-        "Olá! Sou recepcionista há 3 anos e tenho paixão por viagens. Adoraria fazer parte da equipe do hotel em Fernando de Noronha!",
-    },
-    {
-      id: "cand-3",
-      name: "Lucas Mendes",
-      age: 25,
-      location: "Brasil",
-      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop",
-      rating: 4.6,
-      reviewCount: 8,
-      matchPercent: 88,
-      hasLiked: true,
-      status: "accepted",
-      applicationDate: "08/12/2025",
-      desiredStartDate: "05/01/2026",
-      duration: "3 meses",
-      languages: ["Portugues", "Ingles", "Espanhol"],
-      skills: ["Turismo", "Atendimento", "Redes Sociais"],
-      requiredSkills: [
-        { label: "Atendimento ao Cliente", met: true },
-        { label: "Comunicacao", met: true },
-      ],
-      optionalSkills: [
-        { label: "Redes Sociais", met: true },
-        { label: "Experiencia Hotel", met: true },
-      ],
-      message:
-        "Trabalho com turismo há 2 anos e falo 3 idiomas. Seria incrível trabalhar em Noronha!",
-    },
-  ],
-};
-
-// Fallback for IDs without specific mock data
-const DEFAULT_CANDIDATES: Candidate[] = MOCK_CANDIDATES["opp-1"] ?? [];
-
 /* ── Page ── */
 
 export default function HostCandidates() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // TODO: substituir por useQuery + Supabase
-  const isLoading = false;
-  const summary = id ? MOCK_SUMMARIES[id] ?? MOCK_SUMMARIES["opp-1"] : null;
-  const candidates = id ? (MOCK_CANDIDATES[id] ?? DEFAULT_CANDIDATES) : [];
+  const [isLoading, setIsLoading] = useState(true);
+  const [summary, setSummary] = useState<OpportunitySummary | null>(null);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+
+  useEffect(() => {
+    if (!id) {
+      setIsLoading(false);
+      return;
+    }
+
+    async function fetchData() {
+      setIsLoading(true);
+
+      // Fetch the opportunity/request
+      const { data: request, error } = await supabase
+        .from("requests")
+        .select("*")
+        .eq("id", id!)
+        .single();
+
+      if (error || !request) {
+        setSummary(null);
+        setCandidates([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Build duration
+      let duration = "";
+      if (request.duration_min && request.duration_max) {
+        duration = `${request.duration_min} - ${request.duration_max}`;
+      } else if (request.duration_min) {
+        duration = request.duration_min;
+      } else if (request.duration_max) {
+        duration = request.duration_max;
+      }
+
+      // Category
+      const category = request.opportunity_type === "trabalho_pago"
+        ? "Trabalho Pago"
+        : request.opportunity_type === "voluntariado"
+          ? "Voluntariado"
+          : request.opportunity_type || "Oportunidade";
+
+      // Get first photo or fallback
+      const imageUrl = request.photos && request.photos.length > 0
+        ? request.photos[0]
+        : "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&h=400&fit=crop";
+
+      // Count proposals for this request
+      const { count: proposalCount } = await supabase
+        .from("proposals")
+        .select("*", { count: "exact", head: true })
+        .eq("request_id", id!)
+        .is("deleted_at", null);
+
+      setSummary({
+        title: request.title,
+        destination: request.destination ?? "",
+        description: request.description ?? "",
+        category,
+        status: request.status === "open" ? "open" : "closed",
+        imageUrl,
+        candidateCount: proposalCount ?? 0,
+        viewCount: 0,
+        duration,
+      });
+
+      // No proposals/applications table with full candidate data yet - show empty
+      setCandidates([]);
+      setIsLoading(false);
+    }
+
+    fetchData();
+  }, [id]);
 
   const statusLabel = summary?.status === "open" ? "Aberto" : "Finalizado";
   const statusClass =

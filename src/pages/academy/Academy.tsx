@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { dbRoleToUIRole } from "@/lib/roles";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Search,
   Play,
@@ -17,176 +18,79 @@ import {
   Clock,
   ChevronRight,
   Grid3X3,
+  Loader2,
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent } from "@/components/ui/card";
 
-// TODO: substituir por query Supabase
-const MOCK_COURSES = [
-  {
-    id: "1",
-    title: "Atendimento ao Cliente de Excelencia",
-    modules: 4,
-    lessons: 24,
-    hours: 8,
-    level: "Iniciante",
-    rating: 4.9,
-    students: 3456,
-    author: "Maria Silva",
-    image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop",
-    tags: ["Mais Popular", "Certificacao", "Para Iniciantes"],
-    progress: 35,
-  },
-  {
-    id: "2",
-    title: "Marketing para Hostels",
-    modules: 4,
-    lessons: 24,
-    hours: 8,
-    level: "Intermediario",
-    rating: 4.7,
-    students: 1200,
-    author: "Roberto Gomes",
-    image:
-      "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=800&h=400&fit=crop",
-    tags: ["Para Anfitrioes"],
-    progress: 0,
-  },
-  {
-    id: "3",
-    title: "Gestao Financeira para Hostels",
-    modules: 5,
-    lessons: 30,
-    hours: 10,
-    level: "Avancado",
-    rating: 4.8,
-    students: 890,
-    author: "Ana Paula Silva",
-    image:
-      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=400&fit=crop",
-    tags: ["Gestao"],
-    progress: 65,
-  },
-  {
-    id: "4",
-    title: "SEO para Acomodacoes",
-    modules: 4,
-    lessons: 22,
-    hours: 8,
-    level: "Intermediario",
-    rating: 4.6,
-    students: 750,
-    author: "Roberto Gomes",
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=400&fit=crop",
-    tags: ["Marketing"],
-    progress: 65,
-  },
-];
+/* ================================================================== */
+/*  Types                                                               */
+/* ================================================================== */
 
-// TODO: substituir por query Supabase
-const MOCK_MY_COURSES_HOST = [
-  {
-    id: "10",
-    title: "Como Receber Viajantes Internacionais",
-    modules: 4,
-    lessons: 24,
-    hours: 8,
-    students: 34,
-    revenue: 400,
-    completionRate: 85,
-    lastUpdated: "2 dias atras",
-    image:
-      "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&h=400&fit=crop",
-  },
-  {
-    id: "11",
-    title: "Gestao de Hostel para Iniciantes",
-    modules: 6,
-    lessons: 36,
-    hours: 12,
-    students: 56,
-    revenue: 1200,
-    completionRate: 72,
-    lastUpdated: "5 dias atras",
-    image:
-      "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800&h=400&fit=crop",
-  },
-];
+interface CourseRow {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  cover_image_url: string | null;
+  level: string | null;
+  language: string | null;
+  category: string | null;
+  instructor_name: string | null;
+  pricing_type: string | null;
+  created_by: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+}
 
-// TODO: substituir por query Supabase
-const MOCK_CONTINUE_WATCHING = [
-  {
-    id: "1",
-    title: "Atendimento ao Cliente de Excelencia",
-    currentLesson: 5,
-    currentLessonTitle: "Comunicacao Nao-Verbal",
-    minutesRemaining: 12,
-    author: "Maria Silva",
-    module: "Modulo 2: Comunicacao Eficaz",
-    completedLessons: 8,
-    totalLessons: 24,
-    progress: 33,
-    nextLesson: "Aula 6: Escuta Ativa",
-    image:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop",
-  },
-  {
-    id: "3",
-    title: "Gestao Financeira para Hostels",
-    currentLesson: 18,
-    currentLessonTitle: "Fluxo de Caixa Mensal",
-    minutesRemaining: 8,
-    author: "Ana Paula Silva",
-    module: "Modulo 4: Controle Financeiro",
-    completedLessons: 19,
-    totalLessons: 30,
-    progress: 63,
-    nextLesson: "Aula 19: Relatorios Financeiros",
-    image:
-      "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=800&h=400&fit=crop",
-  },
-  {
-    id: "4",
-    title: "SEO para Acomodacoes",
-    currentLesson: 14,
-    currentLessonTitle: "Palavras-Chave Estrategicas",
-    minutesRemaining: 15,
-    author: "Roberto Gomes",
-    module: "Modulo 3: Otimizacao On-Page",
-    completedLessons: 14,
-    totalLessons: 22,
-    progress: 64,
-    nextLesson: "Aula 15: Meta Descriptions",
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&h=400&fit=crop",
-  },
-];
-
-// TODO: substituir por query Supabase
-const MOCK_COMPLETED_COURSES = [
-  {
-    id: "20",
-    title: "Introducao a Hospitalidade",
-    author: "Carlos Mendes",
-    modules: 3,
-    hours: 6,
-    image:
-      "https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&h=400&fit=crop",
-  },
-  {
-    id: "21",
-    title: "Primeiros Socorros para Hospedagens",
-    author: "Dra. Lucia Ferreira",
-    modules: 2,
-    hours: 4,
-    image:
-      "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=400&fit=crop",
-  },
-];
+interface CourseCardData {
+  id: string;
+  title: string;
+  image: string;
+  author: string;
+  level: string;
+  modules: number;
+  lessons: number;
+  hours: number;
+  rating: number;
+  students: number;
+  tags: string[];
+  progress: number;
+}
 
 type TabKey = "descobrir" | "meus-cursos" | "meu-aprendizado";
+
+const PLACEHOLDER_IMAGE =
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&h=400&fit=crop";
+
+function mapCourseRow(
+  row: CourseRow,
+  modulesCount: number,
+  lessonsCount: number
+): CourseCardData {
+  const tags: string[] = [];
+  if (row.category) tags.push(row.category);
+  if (row.level) tags.push(row.level);
+  if (row.pricing_type === "free") tags.push("Gratuito");
+
+  return {
+    id: row.id,
+    title: row.title,
+    image: row.cover_image_url || PLACEHOLDER_IMAGE,
+    author: row.instructor_name || "Instrutor",
+    level: row.level || "Iniciante",
+    modules: modulesCount,
+    lessons: lessonsCount,
+    hours: Math.max(1, Math.round(lessonsCount * 0.35)),
+    rating: 0,
+    students: 0,
+    tags,
+    progress: 0,
+  };
+}
+
+/* ================================================================== */
+/*  Shared UI Components                                                */
+/* ================================================================== */
 
 function RatingStars({ rating }: { rating: number }) {
   return (
@@ -214,11 +118,28 @@ function TagBadge({ label }: { label: string }) {
   );
 }
 
+function LoadingState() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <BookOpen className="h-12 w-12 text-tc-text-hint mb-4" />
+      <p className="text-tc-text-secondary text-sm">{message}</p>
+    </div>
+  );
+}
+
 function CourseCard({
   course,
   showProgress,
 }: {
-  course: (typeof MOCK_COURSES)[number];
+  course: CourseCardData;
   showProgress?: boolean;
 }) {
   return (
@@ -273,6 +194,80 @@ function CourseCard({
 }
 
 /* ================================================================== */
+/*  Hook: fetch all courses with counts                                 */
+/* ================================================================== */
+
+function useAllCourses() {
+  const [courses, setCourses] = useState<CourseCardData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchCourses() {
+      setLoading(true);
+      const { data: rows, error } = await supabase
+        .from("courses")
+        .select("*")
+        .is("deleted_at", null)
+        .eq("status", "published")
+        .order("created_at", { ascending: false });
+
+      if (error || !rows || rows.length === 0) {
+        setCourses([]);
+        setLoading(false);
+        return;
+      }
+
+      const courseIds = rows.map((r: CourseRow) => r.id);
+
+      // Fetch modules counts
+      const { data: modulesData } = await supabase
+        .from("course_modules")
+        .select("id, course_id")
+        .in("course_id", courseIds);
+
+      // Fetch lessons counts
+      const moduleIds = (modulesData || []).map((m: { id: string }) => m.id);
+      let lessonsData: { id: string; module_id: string }[] = [];
+      if (moduleIds.length > 0) {
+        const { data } = await supabase
+          .from("course_lessons")
+          .select("id, module_id")
+          .in("module_id", moduleIds);
+        lessonsData = data || [];
+      }
+
+      // Build counts per course
+      const modulesPerCourse: Record<string, number> = {};
+      const lessonsPerCourse: Record<string, number> = {};
+      const moduleIdToCourseId: Record<string, string> = {};
+
+      for (const m of modulesData || []) {
+        modulesPerCourse[m.course_id] = (modulesPerCourse[m.course_id] || 0) + 1;
+        moduleIdToCourseId[m.id] = m.course_id;
+      }
+      for (const l of lessonsData) {
+        const cid = moduleIdToCourseId[l.module_id];
+        if (cid) lessonsPerCourse[cid] = (lessonsPerCourse[cid] || 0) + 1;
+      }
+
+      const mapped = rows.map((row: CourseRow) =>
+        mapCourseRow(
+          row,
+          modulesPerCourse[row.id] || 0,
+          lessonsPerCourse[row.id] || 0
+        )
+      );
+
+      setCourses(mapped);
+      setLoading(false);
+    }
+    fetchCourses();
+  }, []);
+
+  return { courses, loading };
+}
+
+/* ================================================================== */
 /*  TAB: Descobrir                                                     */
 /* ================================================================== */
 function TabDescobrir({
@@ -281,6 +276,7 @@ function TabDescobrir({
   uiRole: "viajante" | "anfitriao" | null;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const { courses, loading } = useAllCourses();
 
   const heroTitle =
     uiRole === "viajante"
@@ -292,14 +288,16 @@ function TabDescobrir({
       ? "Desenvolva habilidades profissionais em hospitalidade e destaque-se no mercado. Aprenda com os melhores especialistas do setor."
       : "Aprenda tecnicas e estrategias para transformar seu hostel em uma experiencia inesquecivel para viajantes de todo o mundo.";
 
-  const heroCourse = MOCK_COURSES[0];
+  const heroCourse = courses.length > 0 ? courses[0] : null;
+
+  if (loading) return <LoadingState />;
 
   return (
     <div className="space-y-8">
       {/* Hero Banner */}
       <div className="relative w-full h-[300px] rounded-xl overflow-hidden">
         <img
-          src={heroCourse.image}
+          src={heroCourse?.image || PLACEHOLDER_IMAGE}
           alt={heroTitle}
           className="absolute inset-0 w-full h-full object-cover"
         />
@@ -307,58 +305,48 @@ function TabDescobrir({
         <div className="relative z-10 flex flex-col justify-center h-full px-8 max-w-2xl">
           {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-3">
-            <TagBadge label="Mais Popular" />
-            {uiRole === "anfitriao" ? (
-              <TagBadge label="Para Anfitrioes" />
+            {heroCourse ? (
+              heroCourse.tags.map((tag) => <TagBadge key={tag} label={tag} />)
             ) : (
-              <TagBadge label="Certificacao" />
-            )}
-            {uiRole === "anfitriao" ? (
-              <TagBadge label="Gestao" />
-            ) : (
-              <TagBadge label="Para Iniciantes" />
+              <>
+                <TagBadge label="Academy" />
+                <TagBadge label="Cursos" />
+              </>
             )}
           </div>
           {/* Course info */}
-          <p className="text-white/70 text-sm mb-1">5 modulos - 40 horas</p>
+          {heroCourse && (
+            <p className="text-white/70 text-sm mb-1">
+              {heroCourse.modules} modulos - {heroCourse.hours} horas
+            </p>
+          )}
           {/* Title */}
           <h1 className="text-3xl font-bold text-white mb-2 leading-tight">
-            {heroTitle}
+            {heroCourse ? heroCourse.title : heroTitle}
           </h1>
           {/* Description */}
           <p className="text-white/80 text-sm mb-4 line-clamp-3">
             {heroDescription}
           </p>
           {/* Buttons */}
-          <div className="flex items-center gap-3 mb-4">
-            <Link
-              to={`/academy/courses/${heroCourse.id}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-navy-500 text-white font-medium text-sm hover:bg-navy-600 transition-colors"
-            >
-              <Play className="h-4 w-4" />
-              Comecar Curso
-            </Link>
-            <Link
-              to={`/academy/courses/${heroCourse.id}`}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-500/80 text-white font-medium text-sm hover:bg-rose-500 transition-colors"
-            >
-              <Info className="h-4 w-4" />
-              Mais Informacoes
-            </Link>
-          </div>
-          {/* Progress bar */}
-          <div className="max-w-xs">
-            <div className="flex items-center justify-between text-xs text-white/80 mb-1">
-              <span>Seu progresso</span>
-              <span>35%</span>
+          {heroCourse && (
+            <div className="flex items-center gap-3 mb-4">
+              <Link
+                to={`/academy/courses/${heroCourse.id}`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-navy-500 text-white font-medium text-sm hover:bg-navy-600 transition-colors"
+              >
+                <Play className="h-4 w-4" />
+                Comecar Curso
+              </Link>
+              <Link
+                to={`/academy/courses/${heroCourse.id}`}
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-500/80 text-white font-medium text-sm hover:bg-rose-500 transition-colors"
+              >
+                <Info className="h-4 w-4" />
+                Mais Informacoes
+              </Link>
             </div>
-            <div className="w-full h-2 rounded-full bg-white/20 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-rose-500 to-navy-500"
-                style={{ width: "35%" }}
-              />
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -393,7 +381,9 @@ function TabDescobrir({
       </div>
 
       {/* Section title */}
-      {uiRole === "anfitriao" ? (
+      {courses.length === 0 ? (
+        <EmptyState message="Nenhum curso disponivel" />
+      ) : uiRole === "anfitriao" ? (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
@@ -409,7 +399,7 @@ function TabDescobrir({
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {MOCK_COURSES.map((course) => (
+            {courses.map((course) => (
               <CourseCard key={course.id} course={course} />
             ))}
           </div>
@@ -419,7 +409,7 @@ function TabDescobrir({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
               <Play className="h-5 w-5 text-rose-500" />
-              Continuar Assistindo
+              Cursos Disponiveis
             </h2>
             <Link
               to="/academy"
@@ -430,8 +420,8 @@ function TabDescobrir({
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {MOCK_COURSES.filter((c) => c.progress > 0).map((course) => (
-              <CourseCard key={course.id} course={course} showProgress />
+            {courses.map((course) => (
+              <CourseCard key={course.id} course={course} />
             ))}
           </div>
         </div>
@@ -444,6 +434,34 @@ function TabDescobrir({
 /*  TAB: Meus Cursos (Anfitriao)                                       */
 /* ================================================================== */
 function MeusCursosAnfitriao() {
+  const { user } = useAuth();
+  const [courses, setCourses] = useState<CourseRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchMyCourses() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("created_by", user.id)
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        setCourses(data);
+      }
+      setLoading(false);
+    }
+    fetchMyCourses();
+  }, [user]);
+
+  if (loading) return <LoadingState />;
+
   return (
     <div className="space-y-8">
       {/* Banner */}
@@ -474,7 +492,7 @@ function MeusCursosAnfitriao() {
             </div>
             <div>
               <p className="text-sm text-tc-text-hint">Total de Alunos</p>
-              <p className="text-2xl font-bold text-tc-text-primary">390</p>
+              <p className="text-2xl font-bold text-tc-text-primary">0</p>
             </div>
           </CardContent>
         </Card>
@@ -485,7 +503,9 @@ function MeusCursosAnfitriao() {
             </div>
             <div>
               <p className="text-sm text-tc-text-hint">Cursos Publicados</p>
-              <p className="text-2xl font-bold text-tc-text-primary">2</p>
+              <p className="text-2xl font-bold text-tc-text-primary">
+                {courses.length}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -497,7 +517,7 @@ function MeusCursosAnfitriao() {
             <div>
               <p className="text-sm text-tc-text-hint">Receita Total</p>
               <p className="text-2xl font-bold text-tc-text-primary">
-                R$ 7.800
+                R$ 0,00
               </p>
             </div>
           </CardContent>
@@ -509,7 +529,7 @@ function MeusCursosAnfitriao() {
             </div>
             <div>
               <p className="text-sm text-tc-text-hint">Avaliacao Media</p>
-              <p className="text-2xl font-bold text-tc-text-primary">4.8</p>
+              <p className="text-2xl font-bold text-tc-text-primary">--</p>
             </div>
           </CardContent>
         </Card>
@@ -520,64 +540,67 @@ function MeusCursosAnfitriao() {
         <h3 className="text-lg font-semibold text-tc-text-primary">
           Seus Cursos
         </h3>
-        {MOCK_MY_COURSES_HOST.map((course) => (
-          <Card key={course.id} className="overflow-hidden">
-            <div className="flex flex-col md:flex-row">
-              <div className="md:w-64 md:h-auto h-40 shrink-0">
-                <img
-                  src={course.image}
-                  alt={course.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <CardContent className="p-5 flex-1 flex flex-col justify-between">
-                <div>
-                  <h4 className="text-lg font-medium text-tc-text-primary mb-1">
-                    {course.title}
-                  </h4>
-                  <p className="text-sm text-tc-text-hint mb-2">
-                    {course.modules} modulos - {course.lessons} aulas -{" "}
-                    {course.hours}h - Ultima atualizacao: {course.lastUpdated}
-                  </p>
-                  <div className="flex flex-wrap gap-4 text-sm text-tc-text-secondary mb-3">
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4 text-tc-text-hint" />
-                      Alunos: {course.students}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <DollarSign className="h-4 w-4 text-tc-text-hint" />
-                      Receita: R$ {course.revenue.toFixed(2).replace(".", ",")}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Award className="h-4 w-4 text-tc-text-hint" />
-                      Taxa de conclusao: {course.completionRate}%
-                    </span>
+        {courses.length === 0 ? (
+          <EmptyState message="Voce ainda nao criou nenhum curso" />
+        ) : (
+          courses.map((course) => (
+            <Card key={course.id} className="overflow-hidden">
+              <div className="flex flex-col md:flex-row">
+                <div className="md:w-64 md:h-auto h-40 shrink-0">
+                  <img
+                    src={course.cover_image_url || PLACEHOLDER_IMAGE}
+                    alt={course.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <CardContent className="p-5 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className="text-lg font-medium text-tc-text-primary mb-1">
+                      {course.title}
+                    </h4>
+                    <p className="text-sm text-tc-text-hint mb-2">
+                      {course.subtitle || "Sem descricao"}
+                    </p>
+                    <div className="flex flex-wrap gap-4 text-sm text-tc-text-secondary mb-3">
+                      <span className="flex items-center gap-1">
+                        <Users className="h-4 w-4 text-tc-text-hint" />
+                        Alunos: 0
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <DollarSign className="h-4 w-4 text-tc-text-hint" />
+                        Receita: R$ 0,00
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Award className="h-4 w-4 text-tc-text-hint" />
+                        Taxa de conclusao: 0%
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link
-                    to={`/academy/courses/${course.id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors"
-                  >
-                    <Eye className="h-4 w-4" />
-                    Ver Detalhes
-                  </Link>
-                  <Link
-                    to={`/academy/courses/${course.id}`}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-tc-text-secondary text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                    Editar
-                  </Link>
-                  <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-red-600 text-sm font-medium hover:bg-red-50 transition-colors">
-                    <Trash2 className="h-4 w-4" />
-                    Excluir
-                  </button>
-                </div>
-              </CardContent>
-            </div>
-          </Card>
-        ))}
+                  <div className="flex items-center gap-2">
+                    <Link
+                      to={`/academy/courses/${course.id}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                      Ver Detalhes
+                    </Link>
+                    <Link
+                      to={`/academy/courses/${course.id}`}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-tc-text-secondary text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                      Editar
+                    </Link>
+                    <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-red-600 text-sm font-medium hover:bg-red-50 transition-colors">
+                      <Trash2 className="h-4 w-4" />
+                      Excluir
+                    </button>
+                  </div>
+                </CardContent>
+              </div>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
@@ -587,8 +610,6 @@ function MeusCursosAnfitriao() {
 /*  TAB: Meus Cursos (Viajante)                                        */
 /* ================================================================== */
 function MeusCursosViajante() {
-  const enrolledCourses = MOCK_COURSES.filter((c) => c.progress > 0);
-
   return (
     <div className="space-y-8">
       {/* Continuar Assistindo */}
@@ -599,59 +620,7 @@ function MeusCursosViajante() {
             Continuar Assistindo
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_CONTINUE_WATCHING.map((item) => (
-            <Link
-              to={`/academy/courses/${item.id}`}
-              key={item.id}
-              className="block group"
-            >
-              <Card className="overflow-hidden border border-border hover:shadow-lg transition-shadow">
-                <div className="relative aspect-video">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-3">
-                    <p className="text-white text-sm font-medium">
-                      Aula {item.currentLesson}: {item.currentLessonTitle}
-                    </p>
-                    <p className="text-white/70 text-xs flex items-center gap-1 mt-0.5">
-                      <Clock className="h-3 w-3" />
-                      {item.minutesRemaining} min restantes
-                    </p>
-                  </div>
-                </div>
-                <CardContent className="p-4 space-y-2">
-                  <h3 className="font-medium text-tc-text-primary leading-snug line-clamp-1 group-hover:text-rose-500 transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-tc-text-hint">{item.author}</p>
-                  <p className="text-xs text-tc-text-secondary">
-                    {item.module}
-                  </p>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-tc-text-hint">
-                      <span>
-                        {item.completedLessons}/{item.totalLessons} aulas
-                      </span>
-                      <span>{item.progress}%</span>
-                    </div>
-                    <Progress value={item.progress} className="h-1.5" />
-                  </div>
-                  <p className="text-xs text-tc-text-secondary">
-                    Proxima: {item.nextLesson}
-                  </p>
-                  <span className="text-xs text-rose-500 font-medium flex items-center gap-1 group-hover:underline">
-                    Continuar
-                    <ChevronRight className="h-3 w-3" />
-                  </span>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <EmptyState message="Voce ainda nao esta matriculado em nenhum curso" />
       </div>
 
       {/* Cursos matriculados */}
@@ -662,11 +631,7 @@ function MeusCursosViajante() {
             Cursos Matriculados
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {enrolledCourses.map((course) => (
-            <CourseCard key={course.id} course={course} showProgress />
-          ))}
-        </div>
+        <EmptyState message="Voce ainda nao esta matriculado em nenhum curso" />
       </div>
     </div>
   );
@@ -686,59 +651,7 @@ function TabMeuAprendizado() {
             Continuar Assistindo
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {MOCK_CONTINUE_WATCHING.map((item) => (
-            <Link
-              to={`/academy/courses/${item.id}`}
-              key={item.id}
-              className="block group"
-            >
-              <Card className="overflow-hidden border border-border hover:shadow-lg transition-shadow">
-                <div className="relative aspect-video">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/50 flex flex-col justify-end p-3">
-                    <p className="text-white text-sm font-medium">
-                      Aula {item.currentLesson}: {item.currentLessonTitle}
-                    </p>
-                    <p className="text-white/70 text-xs flex items-center gap-1 mt-0.5">
-                      <Clock className="h-3 w-3" />
-                      {item.minutesRemaining} min restantes
-                    </p>
-                  </div>
-                </div>
-                <CardContent className="p-4 space-y-2">
-                  <h3 className="font-medium text-tc-text-primary leading-snug line-clamp-1 group-hover:text-rose-500 transition-colors">
-                    {item.title}
-                  </h3>
-                  <p className="text-xs text-tc-text-hint">{item.author}</p>
-                  <p className="text-xs text-tc-text-secondary">
-                    {item.module}
-                  </p>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs text-tc-text-hint">
-                      <span>
-                        {item.completedLessons}/{item.totalLessons} aulas
-                      </span>
-                      <span>{item.progress}%</span>
-                    </div>
-                    <Progress value={item.progress} className="h-1.5" />
-                  </div>
-                  <p className="text-xs text-tc-text-secondary">
-                    Proxima: {item.nextLesson}
-                  </p>
-                  <span className="text-xs text-rose-500 font-medium flex items-center gap-1 group-hover:underline">
-                    Continuar
-                    <ChevronRight className="h-3 w-3" />
-                  </span>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
-        </div>
+        <EmptyState message="Voce ainda nao esta matriculado em nenhum curso" />
       </div>
 
       {/* Finalizados */}
@@ -749,43 +662,7 @@ function TabMeuAprendizado() {
             Finalizados
           </h2>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {MOCK_COMPLETED_COURSES.map((course) => (
-            <Card
-              key={course.id}
-              className="overflow-hidden border border-border"
-            >
-              <div className="relative aspect-video">
-                <img
-                  src={course.image}
-                  alt={course.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-2 right-2">
-                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-600 text-white text-xs font-medium">
-                    Finalizado &#10003;
-                  </span>
-                </div>
-              </div>
-              <CardContent className="p-4 space-y-2">
-                <h3 className="font-medium text-tc-text-primary leading-snug line-clamp-2">
-                  {course.title}
-                </h3>
-                <p className="text-xs text-tc-text-hint">{course.author}</p>
-                <p className="text-xs text-tc-text-secondary">
-                  {course.modules} modulos - {course.hours}h
-                </p>
-                <Link
-                  to={`/academy/courses/${course.id}/certificate`}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors mt-1"
-                >
-                  <Award className="h-4 w-4" />
-                  Ver Certificado
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <EmptyState message="Voce ainda nao finalizou nenhum curso" />
       </div>
     </div>
   );

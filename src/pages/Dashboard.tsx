@@ -59,10 +59,10 @@ function ViajanteDashboard({
     : "VI";
 
   const stats = [
-    { label: "Candidaturas Ativas", value: 12, icon: Calendar, color: "text-navy-500" },
-    { label: "Oportunidades Salvas", value: 23, icon: Heart, color: "text-rose-500" },
-    { label: "Avaliacao Media", value: "4.9", icon: Star, color: "text-yellow-500" },
-    { label: "Experiencias Concluidas", value: 7, icon: CheckCircle2, color: "text-emerald-500" },
+    { label: "Candidaturas Ativas", value: 0, icon: Calendar, color: "text-navy-500" },
+    { label: "Oportunidades Salvas", value: 0, icon: Heart, color: "text-rose-500" },
+    { label: "Avaliacao Media", value: "--", icon: Star, color: "text-yellow-500" },
+    { label: "Experiencias Concluidas", value: 0, icon: CheckCircle2, color: "text-emerald-500" },
   ];
 
   const quickLinks = [
@@ -70,13 +70,13 @@ function ViajanteDashboard({
       title: "Academia de Viajantes",
       icon: GraduationCap,
       description: "Cursos e certificacoes",
-      meta: "120+ cursos disponiveis",
+      meta: "Explore os cursos",
     },
     {
       title: "Meus Cursos",
       icon: BookOpen,
       description: "Gerencie seus cursos",
-      meta: "3 cursos publicados",
+      meta: "Veja seus cursos",
     },
     {
       title: "Criar Novo Curso",
@@ -88,16 +88,11 @@ function ViajanteDashboard({
       title: "Integracao Bancaria",
       icon: DollarSign,
       description: "Receba pagamentos",
-      meta: "1 banco vinculado",
+      meta: "Configure sua conta",
     },
   ];
 
-  const recentActivity = [
-    { text: "Candidatura enviada para Eco Lodge - Costa Rica", time: "2h atras" },
-    { text: "Perfil visualizado por 3 anfitrioes", time: "5h atras" },
-    { text: "Novo match: Fazenda Organica - Portugal", time: "1d atras" },
-    { text: "Avaliacao recebida: 5 estrelas", time: "2d atras" },
-  ];
+  const recentActivity: { text: string; time: string }[] = [];
 
   return (
     <div className="space-y-6">
@@ -124,10 +119,7 @@ function ViajanteDashboard({
                     Viajante
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    Sao Paulo, Brasil
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    · Membro desde Janeiro 2024
+                    Viajante
                   </span>
                 </div>
               </div>
@@ -136,7 +128,7 @@ function ViajanteDashboard({
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full">
                 <Zap className="h-4 w-4" />
-                <span className="text-sm font-semibold">5 Creditos</span>
+                <span className="text-sm font-semibold">0 Creditos</span>
               </div>
               <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <Bell className="h-5 w-5 text-muted-foreground" />
@@ -206,7 +198,7 @@ function ViajanteDashboard({
                     Explore +500 vagas ao redor do mundo
                   </p>
                   <p className="text-xs text-navy-400 mt-1">
-                    23 novas hoje · 94% match disponivel
+                    Encontre vagas ao redor do mundo
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-navy-400 mt-1" />
@@ -230,7 +222,7 @@ function ViajanteDashboard({
                     Conecte-se com viajantes e anfitrioes
                   </p>
                   <p className="text-xs text-rose-400 mt-1">
-                    2,847 viajantes ativos · 156 online agora
+                    Interaja com a comunidade
                   </p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-rose-400 mt-1" />
@@ -353,46 +345,11 @@ function AnfitriaoDashboard({
     : "AN";
 
   const stats = [
-    { label: "Candidaturas", value: requestCount || 12, icon: FileText, bg: "bg-rose-500" },
-    { label: "Oportunidades", value: openRequests || 5, icon: Briefcase, bg: "bg-rose-500" },
-    { label: "Avaliacoes", value: "4.9", icon: Star, bg: "bg-navy-500" },
+    { label: "Candidaturas", value: requestCount, icon: FileText, bg: "bg-rose-500" },
+    { label: "Oportunidades", value: openRequests, icon: Briefcase, bg: "bg-rose-500" },
+    { label: "Avaliacoes", value: "--", icon: Star, bg: "bg-navy-500" },
   ];
 
-  const mockCandidaturas = [
-    {
-      name: "Maria Silva",
-      role: "Organic Farm Helper",
-      status: "Pendente" as const,
-      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=96&h=96&fit=crop",
-      location: "Brazil",
-      rating: 4.9,
-      experience: "3 anos exp.",
-    },
-    {
-      name: "John Anderson",
-      role: "Recepcionista Hostel",
-      status: "Recusado" as const,
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=96&h=96&fit=crop",
-      location: "USA",
-      rating: 4.7,
-      experience: "2 anos exp.",
-    },
-    {
-      name: "Sophie Laurent",
-      role: "Social Media Manager",
-      status: "Aceita" as const,
-      avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=96&h=96&fit=crop",
-      location: "France",
-      rating: 5,
-      experience: "5 anos exp.",
-    },
-  ];
-
-  const statusConfig = {
-    Pendente: "bg-amber-50 text-amber-600 border border-amber-200",
-    Recusado: "bg-tc-red-bg text-tc-red-text border border-tc-red-border",
-    Aceita: "bg-tc-green-bg text-tc-green-text border border-tc-green-border",
-  } as const;
 
   return (
     <div className="space-y-6">
@@ -421,10 +378,7 @@ function AnfitriaoDashboard({
                 </div>
                 <div className="flex flex-wrap items-center gap-1 mt-1">
                   <span className="text-sm text-muted-foreground">
-                    Fernando de Noronha, PE/BR
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    · Membro desde Maio 2025
+                    Anfitriao
                   </span>
                 </div>
               </div>
@@ -492,7 +446,7 @@ function AnfitriaoDashboard({
               </p>
             </div>
             <span className="text-xs text-emerald-600 font-medium">
-              1 banco vinculado
+              Configurar
             </span>
           </div>
         </CardContent>
@@ -545,50 +499,20 @@ function AnfitriaoDashboard({
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-tc-text-primary">Candidaturas Recentes</h3>
           <Link
-            to="/proposals"
+            to="/anfitriao/candidaturas"
             className="text-sm text-tc-text-secondary hover:underline flex items-center gap-1"
           >
             Ver todas <ChevronRight className="h-4 w-4" />
           </Link>
         </div>
 
-        <div className="space-y-3">
-          {mockCandidaturas.map((c) => (
-            <Card key={c.name} className="hover:shadow-sm transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-12 w-12 shrink-0">
-                    <img src={c.avatar} alt={c.name} className="h-full w-full object-cover rounded-full" />
-                    <AvatarFallback className="bg-rose-50 text-rose-600 text-xs font-medium">
-                      {c.name.split(" ").map(n => n[0]).join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-medium text-tc-text-primary">{c.name}</span>
-                      <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full ${statusConfig[c.status]}`}>
-                        {c.status}
-                      </span>
-                    </div>
-                    <p className="text-xs text-tc-text-secondary">{c.role}</p>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-tc-text-hint">
-                      <span className="flex items-center gap-0.5">
-                        <span>📍</span> {c.location}
-                      </span>
-                      <span className="flex items-center gap-0.5">
-                        <Star className="h-3 w-3 text-amber-400 fill-amber-400" /> {c.rating}
-                      </span>
-                      <span className="flex items-center gap-0.5">
-                        <Calendar className="h-3 w-3" /> {c.experience}
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronRight className="h-5 w-5 text-tc-text-hint shrink-0" />
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-6">
+            <p className="text-sm text-muted-foreground text-center">
+              Nenhuma candidatura recebida
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
@@ -598,7 +522,7 @@ function AnfitriaoDashboard({
 /*  Main Dashboard – role switch                                      */
 /* ------------------------------------------------------------------ */
 const Dashboard = () => {
-  const { profile, organization, userRole, uiRole, signOut } = useAuth();
+  const { profile, organization, userRole, uiRole, signOut, user } = useAuth();
 
   /* ---- existing Supabase queries ---- */
   const { data: requestCount = 0 } = useQuery({
@@ -639,16 +563,29 @@ const Dashboard = () => {
     },
   });
 
+  // Viajante: fetch traveler's own proposals (candidaturas)
+  // Anfitriao: fetch host's own requests (oportunidades)
   const { data: recentRequests = [] } = useQuery({
-    queryKey: ["dashboard-recent", organization?.id],
+    queryKey: ["dashboard-recent", user?.id, uiRole],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("requests")
-        .select("id, title, destination, status, created_at")
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return data ?? [];
+      if (!user) return [];
+
+      if (uiRole === "anfitriao") {
+        // Host: show their own requests
+        const { data } = await supabase
+          .from("requests")
+          .select("id, title, destination, status, created_at")
+          .eq("created_by", user.id)
+          .is("deleted_at", null)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        return data ?? [];
+      }
+
+      // Traveler: show nothing (no proposals integration yet)
+      return [];
     },
+    enabled: !!user,
   });
 
   /* ---- Render the role-specific dashboard ---- */
