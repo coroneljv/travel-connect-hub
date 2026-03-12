@@ -66,8 +66,20 @@ export default function WatchCourse() {
   const [course, setCourse] = useState<CourseInfo | null>(null);
   const [flatLessons, setFlatLessons] = useState<FlatLesson[]>([]);
   const [loading, setLoading] = useState(true);
-  const [completedLessons, setCompletedLessons] = useState<Set<string>>(new Set());
+  const [completedLessons, setCompletedLessons] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem(`tc_completed_${id}`);
+      if (saved) return new Set(JSON.parse(saved));
+    } catch { /* ignore */ }
+    return new Set();
+  });
   const [showCertificate, setShowCertificate] = useState(false);
+
+  // Persist completed lessons to localStorage
+  const persistCompleted = (next: Set<string>) => {
+    setCompletedLessons(next);
+    localStorage.setItem(`tc_completed_${id}`, JSON.stringify([...next]));
+  };
 
   useEffect(() => {
     async function fetchData() {
@@ -136,6 +148,18 @@ export default function WatchCourse() {
       }
 
       setFlatLessons(flat);
+
+      // Check if course was already completed (from localStorage)
+      try {
+        const saved = localStorage.getItem(`tc_completed_${id}`);
+        if (saved) {
+          const savedIds = new Set(JSON.parse(saved) as string[]);
+          if (flat.length > 0 && flat.every((l) => savedIds.has(l.id))) {
+            setShowCertificate(true);
+          }
+        }
+      } catch { /* ignore */ }
+
       setLoading(false);
     }
     fetchData();
@@ -179,7 +203,7 @@ export default function WatchCourse() {
     if (!currentLesson) return;
     const next = new Set(completedLessons);
     next.add(currentLesson.id);
-    setCompletedLessons(next);
+    persistCompleted(next);
 
     // If all lessons are now completed, show certificate
     if (next.size === totalLessons) {
@@ -559,12 +583,12 @@ export default function WatchCourse() {
               >
                 Voltar aos Cursos
               </Link>
-              <button
-                onClick={() => setShowCertificate(false)}
-                className="flex-1 py-2.5 px-4 text-sm font-medium text-white bg-navy-500 hover:bg-navy-600 rounded-lg transition-colors"
+              <Link
+                to={`/academy/courses/${id}/certificate`}
+                className="flex-1 py-2.5 px-4 text-sm font-medium text-white bg-navy-500 hover:bg-navy-600 rounded-lg transition-colors text-center"
               >
                 Ver Certificado
-              </button>
+              </Link>
             </div>
           </div>
         </div>

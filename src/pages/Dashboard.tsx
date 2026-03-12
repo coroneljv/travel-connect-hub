@@ -130,12 +130,11 @@ function ViajanteDashboard({
                 <Zap className="h-4 w-4" />
                 <span className="text-sm font-semibold">0 Creditos</span>
               </div>
-              <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+              <Link to="/notifications" className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <Bell className="h-5 w-5 text-muted-foreground" />
-              </button>
+              </Link>
               <Link to="/chat" className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-rose-500 border-2 border-white" />
               </Link>
               <Link to="/settings" className="p-2 rounded-full hover:bg-muted transition-colors">
                 <Settings className="h-5 w-5 text-muted-foreground" />
@@ -385,10 +384,9 @@ function AnfitriaoDashboard({
             </div>
 
             <div className="flex items-center gap-3">
-              <button className="relative p-2 rounded-full hover:bg-muted transition-colors">
+              <Link to="/notifications" className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <Bell className="h-5 w-5 text-muted-foreground" />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-rose-500" />
-              </button>
+              </Link>
               <Link to="/chat" className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
               </Link>

@@ -37,6 +37,8 @@ const CreateCourse = lazy(() => import("./pages/academy/CreateCourse"));
 const Community = lazy(() => import("./pages/community/Community"));
 const TravelerProfile = lazy(() => import("./pages/community/TravelerProfile"));
 const HostProfile = lazy(() => import("./pages/community/HostProfile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Notifications = lazy(() => import("./pages/Notifications"));
 
 const queryClient = new QueryClient();
 
@@ -85,7 +87,8 @@ const App = () => (
               <Route path="/anfitriao/oportunidades/:id" element={<Suspense fallback={null}><HostOpportunityDetail /></Suspense>} />
               <Route path="/anfitriao/oportunidades/:id/candidaturas" element={<Suspense fallback={null}><HostCandidates /></Suspense>} />
               <Route path="/anfitriao/oportunidades/:id/candidatos/:candidateId" element={<Suspense fallback={null}><CandidateProfile /></Suspense>} />
-              <Route path="/settings" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/settings" element={<Suspense fallback={null}><Settings /></Suspense>} />
+              <Route path="/notifications" element={<Suspense fallback={null}><Notifications /></Suspense>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

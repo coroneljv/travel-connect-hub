@@ -34,6 +34,7 @@ import CoursePublishedModal from "@/components/modals/CoursePublishedModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { uploadFile, uploadFiles } from "@/lib/storage";
+import { compressVideo } from "@/lib/video-compress";
 import { toast } from "sonner";
 
 /* ------------------------------------------------------------------ */
@@ -258,7 +259,17 @@ export default function CreateCourse() {
 
           let videoUrl: string | null = null;
           if (lesson.videoFile) {
-            videoUrl = await uploadFile(lesson.videoFile, "courses/videos");
+            const compressToastId = toast.loading("Comprimindo vídeo...", {
+              description: "0%",
+            });
+            const compressed = await compressVideo(lesson.videoFile, (pct) => {
+              toast.loading("Comprimindo vídeo...", {
+                id: compressToastId,
+                description: `${pct}%`,
+              });
+            });
+            toast.dismiss(compressToastId);
+            videoUrl = await uploadFile(compressed, "courses/videos");
           }
 
           let materialUrl: string | null = null;
@@ -829,11 +840,11 @@ export default function CreateCourse() {
                     {lesson.videoFile ? lesson.videoFile.name : "Upload do vídeo*"}
                   </span>
                   <span className="text-xs text-tc-text-hint mt-1">
-                    MP4, MOV ou AVI (máx. 2GB)
+                    MP4, MOV, AVI, MKV, WebM, FLV ou WMV (máx. 2GB)
                   </span>
                   <input
                     type="file"
-                    accept="video/mp4,video/quicktime,video/x-msvideo"
+                    accept=".mp4,.mov,.avi,.mkv,.webm,.flv,.wmv"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0] || null;
