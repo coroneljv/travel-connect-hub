@@ -19,10 +19,28 @@ interface AuthContextType {
     nationality?: string | null;
     passport_country?: string | null;
     travel_style?: string | null;
+    languages?: string[] | null;
+    skills?: string[] | null;
+    regions?: string[] | null;
+    preferred_duration?: string | null;
+    additional_preferences?: string | null;
   } | null;
   userRole: AppRole | null;
   uiRole: UIRole | null;
-  organization: { id: string; name: string; country: string | null; description: string | null } | null;
+  organization: {
+    id: string;
+    name: string;
+    country: string | null;
+    description: string | null;
+    website: string | null;
+    phone: string | null;
+    email: string | null;
+    type: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    postal_code: string | null;
+  } | null;
   loading: boolean;
   selectedUIRole: UIRole | null;
   selectRole: (role: UIRole) => void;
@@ -32,8 +50,23 @@ interface AuthContextType {
     fullName: string;
     uiRole: UIRole;
     phone?: string;
+    dateOfBirth?: string;
+    nationality?: string;
+    passportCountry?: string;
+    bio?: string;
+    travelStyle?: string;
+    languages?: string[];
+    skills?: string[];
+    regions?: string[];
+    preferredDuration?: string;
+    additionalPreferences?: string;
     orgName?: string;
     orgCountry?: string;
+    orgAddress?: string;
+    orgCity?: string;
+    orgState?: string;
+    orgPostalCode?: string;
+    orgType?: string;
   }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -64,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, full_name, organization_id, position, avatar_url, bio, phone, date_of_birth, nationality, passport_country, travel_style")
+        .select("id, full_name, organization_id, position, avatar_url, bio, phone, date_of_birth, nationality, passport_country, travel_style, languages, skills, regions, preferred_duration, additional_preferences")
         .eq("id", userId)
         .single();
 
@@ -81,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (profileData?.organization_id) {
         const { data: orgData } = await supabase
           .from("organizations")
-          .select("id, name, country, description")
+          .select("id, name, country, description, website, phone, email, type, address, city, state, postal_code")
           .eq("id", profileData.organization_id)
           .single();
 
@@ -129,8 +162,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fullName: string;
     uiRole: UIRole;
     phone?: string;
+    dateOfBirth?: string;
+    nationality?: string;
+    passportCountry?: string;
+    bio?: string;
+    travelStyle?: string;
+    languages?: string[];
+    skills?: string[];
+    regions?: string[];
+    preferredDuration?: string;
+    additionalPreferences?: string;
     orgName?: string;
     orgCountry?: string;
+    orgAddress?: string;
+    orgCity?: string;
+    orgState?: string;
+    orgPostalCode?: string;
+    orgType?: string;
   }) => {
     const dbRole = uiRoleToDbRole(params.uiRole);
 
@@ -156,17 +204,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         : params.fullName;
     const orgCountry = params.orgCountry || "Brasil";
 
+    const orgInsert: Record<string, unknown> = { name: orgName, country: orgCountry };
+    if (params.orgAddress) orgInsert.address = params.orgAddress;
+    if (params.orgCity) orgInsert.city = params.orgCity;
+    if (params.orgState) orgInsert.state = params.orgState;
+    if (params.orgPostalCode) orgInsert.postal_code = params.orgPostalCode;
+    if (params.orgType) orgInsert.type = params.orgType;
+
     const { data: orgData, error: orgError } = await supabase
       .from("organizations")
-      .insert({ name: orgName, country: orgCountry })
+      .insert(orgInsert)
       .select("id")
       .single();
 
     if (orgError) throw orgError;
 
+    const profileUpdate: Record<string, unknown> = {
+      organization_id: orgData.id,
+      full_name: params.fullName,
+    };
+    if (params.phone) profileUpdate.phone = params.phone;
+    if (params.dateOfBirth) profileUpdate.date_of_birth = params.dateOfBirth;
+    if (params.nationality) profileUpdate.nationality = params.nationality;
+    if (params.passportCountry) profileUpdate.passport_country = params.passportCountry;
+    if (params.bio) profileUpdate.bio = params.bio;
+    if (params.travelStyle) profileUpdate.travel_style = params.travelStyle;
+    if (params.languages?.length) profileUpdate.languages = params.languages;
+    if (params.skills?.length) profileUpdate.skills = params.skills;
+    if (params.regions?.length) profileUpdate.regions = params.regions;
+    if (params.preferredDuration) profileUpdate.preferred_duration = params.preferredDuration;
+    if (params.additionalPreferences) profileUpdate.additional_preferences = params.additionalPreferences;
+
     const { error: profileError } = await supabase
       .from("profiles")
-      .update({ organization_id: orgData.id, full_name: params.fullName })
+      .update(profileUpdate)
       .eq("id", authData.user.id);
 
     if (profileError) throw profileError;

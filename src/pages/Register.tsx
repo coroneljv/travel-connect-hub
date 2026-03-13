@@ -361,13 +361,40 @@ const Register = () => {
           fullName,
           uiRole: selectedUIRole!,
           phone: phone || undefined,
+          dateOfBirth: dateOfBirth || undefined,
+          nationality: nationality || undefined,
+          passportCountry: passportCountry || undefined,
+          bio: biography || undefined,
+          travelStyle: travelStyle || undefined,
+          languages: selectedLanguages.length ? selectedLanguages : undefined,
+          skills: selectedSkills.length ? selectedSkills : undefined,
+          regions: selectedRegions.length ? selectedRegions : undefined,
+          preferredDuration: selectedDurations.join(", ") || undefined,
+          additionalPreferences: additionalPreferences || undefined,
         });
         toast.success("Cadastro finalizado com sucesso!");
         navigate("/dashboard");
       } else {
-        // TODO: integrar criação de conta Supabase para Anfitrião
-        // Simula envio + abre modal de aprovação
-        await new Promise((r) => setTimeout(r, 1000));
+        if (!email || !orgName) {
+          toast.error("Por favor preencha todos os campos obrigatórios.");
+          setIsLoading(false);
+          return;
+        }
+        const finalPassword = password || "temp123456";
+        await signUp({
+          email,
+          password: finalPassword,
+          fullName: fullName || orgName,
+          uiRole: selectedUIRole!,
+          phone: phone || undefined,
+          orgName,
+          orgCountry: country || "Brasil",
+          orgAddress: address || undefined,
+          orgCity: city || undefined,
+          orgState: state || undefined,
+          orgPostalCode: postalCode || undefined,
+          orgType: hostType || undefined,
+        });
         setShowApprovedModal(true);
       }
     } catch (error: any) {

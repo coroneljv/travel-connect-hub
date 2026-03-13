@@ -18,6 +18,7 @@ import {
   Loader2,
   Clock,
   Camera,
+  Building2,
 } from "lucide-react";
 
 type SettingsTab = "conta" | "notificacoes" | "seguranca" | "idioma" | "pagamento";
@@ -66,8 +67,61 @@ function formatPhone(raw: string): string {
   return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9, 13)}`;
 }
 
+const LANGUAGES = [
+  "Inglês", "Espanhol", "Alemão", "Português", "Francês", "Italiano",
+  "Mandarim", "Japonês", "Russo", "Árabe", "Holandês", "Coreano",
+];
+
+const SKILLS = [
+  "Ensino de inglês", "Atendimento ao Cliente", "Cozinhar", "Limpeza",
+  "Jardinagem", "Marketing Digital", "Construção", "Fotografia",
+  "Design", "Ensino", "Agricultura", "Cuidado de Animais",
+  "Manutenção", "Recepção", "Programação", "Música", "Arte",
+  "Esporte", "Primeiros Socorros", "Outros",
+];
+
+const REGIONS = [
+  "América do Norte", "América Central", "América do Sul", "Europa Central",
+  "Europa Oriental", "Ásia", "Oceania", "África", "Oriente Médio", "Caribe",
+];
+
+const DURATIONS = [
+  "1-2 semanas", "3-4 semanas", "1-3 meses", "3-6 meses", "+6 meses", "Flexível",
+];
+
+function ChipSelect({
+  options,
+  selected,
+  onChange,
+}: {
+  options: string[];
+  selected: string[];
+  onChange: (val: string[]) => void;
+}) {
+  const toggle = (v: string) =>
+    onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => toggle(opt)}
+          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+            selected.includes(opt)
+              ? "bg-rose-500 text-white"
+              : "bg-white border border-gray-300 text-tc-text-primary hover:border-gray-400"
+          }`}
+        >
+          {opt}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function Settings() {
-  const { profile, user, signOut, refreshProfile } = useAuth();
+  const { profile, user, uiRole, organization, signOut, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>("conta");
 
   // --- Conta ---
@@ -82,6 +136,26 @@ export default function Settings() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
 
+  // Viajante fields
+  const [languages, setLanguages] = useState<string[]>([]);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [regions, setRegions] = useState<string[]>([]);
+  const [preferredDuration, setPreferredDuration] = useState("");
+  const [additionalPreferences, setAdditionalPreferences] = useState("");
+
+  // Anfitrião org fields
+  const [orgName, setOrgName] = useState("");
+  const [orgAddress, setOrgAddress] = useState("");
+  const [orgCity, setOrgCity] = useState("");
+  const [orgState, setOrgState] = useState("");
+  const [orgCountry, setOrgCountry] = useState("");
+  const [orgPostalCode, setOrgPostalCode] = useState("");
+  const [orgDescription, setOrgDescription] = useState("");
+  const [orgWebsite, setOrgWebsite] = useState("");
+  const [orgPhone, setOrgPhone] = useState("");
+  const [orgEmail, setOrgEmail] = useState("");
+  const [savingOrg, setSavingOrg] = useState(false);
+
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name ?? "");
@@ -92,8 +166,28 @@ export default function Settings() {
       setPassportCountry(profile.passport_country ?? "");
       setTravelStyle(profile.travel_style ?? "");
       setAvatarUrl(profile.avatar_url ?? "");
+      setLanguages(profile.languages ?? []);
+      setSkills(profile.skills ?? []);
+      setRegions(profile.regions ?? []);
+      setPreferredDuration(profile.preferred_duration ?? "");
+      setAdditionalPreferences(profile.additional_preferences ?? "");
     }
   }, [profile]);
+
+  useEffect(() => {
+    if (organization) {
+      setOrgName(organization.name ?? "");
+      setOrgDescription(organization.description ?? "");
+      setOrgCountry(organization.country ?? "");
+      setOrgWebsite(organization.website ?? "");
+      setOrgPhone(organization.phone ?? "");
+      setOrgEmail(organization.email ?? "");
+      setOrgAddress(organization.address ?? "");
+      setOrgCity(organization.city ?? "");
+      setOrgState(organization.state ?? "");
+      setOrgPostalCode(organization.postal_code ?? "");
+    }
+  }, [organization]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -137,6 +231,11 @@ export default function Settings() {
           nationality: nationality || null,
           passport_country: passportCountry || null,
           travel_style: travelStyle || null,
+          languages: languages.length ? languages : [],
+          skills: skills.length ? skills : [],
+          regions: regions.length ? regions : [],
+          preferred_duration: preferredDuration || null,
+          additional_preferences: additionalPreferences || null,
         })
         .eq("id", profile.id);
       if (error) throw error;
@@ -371,10 +470,136 @@ export default function Settings() {
                     rows={4}
                   />
                 </div>
+
+                {/* Viajante-specific fields */}
+                {uiRole === "viajante" && (
+                  <>
+                    <div className="border-t pt-4 mt-4">
+                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">Idiomas</h3>
+                      <ChipSelect options={LANGUAGES} selected={languages} onChange={setLanguages} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">Habilidades</h3>
+                      <ChipSelect options={SKILLS} selected={skills} onChange={setSkills} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">Regiões de Interesse</h3>
+                      <ChipSelect options={REGIONS} selected={regions} onChange={setRegions} />
+                    </div>
+
+                    <div>
+                      <Label htmlFor="preferred-duration">Duração Preferida</Label>
+                      <select
+                        id="preferred-duration"
+                        className="w-full mt-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                        value={preferredDuration}
+                        onChange={(e) => setPreferredDuration(e.target.value)}
+                      >
+                        <option value="">Selecione...</option>
+                        {DURATIONS.map((d) => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="add-prefs">Preferências Adicionais</Label>
+                      <Textarea
+                        id="add-prefs"
+                        value={additionalPreferences}
+                        onChange={(e) => setAdditionalPreferences(e.target.value)}
+                        placeholder="Alguma preferência ou necessidade especial?"
+                        rows={3}
+                      />
+                    </div>
+                  </>
+                )}
+
                 <Button onClick={handleSaveProfile} disabled={savingProfile}>
                   {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                   Salvar Alterações
                 </Button>
+
+                {/* Anfitrião organization card */}
+                {uiRole === "anfitriao" && organization && (
+                  <div className="border-t pt-6 mt-6 space-y-4">
+                    <h3 className="text-lg font-semibold text-tc-text-primary flex items-center gap-2">
+                      <Building2 className="h-5 w-5" />
+                      Dados da Organização
+                    </h3>
+                    <div>
+                      <Label htmlFor="org-name">Nome da Organização</Label>
+                      <Input
+                        id="org-name"
+                        value={orgName}
+                        onChange={(e) => setOrgName(e.target.value)}
+                        placeholder="Nome da organização"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="org-description">Descrição</Label>
+                      <Textarea
+                        id="org-description"
+                        value={orgDescription}
+                        onChange={(e) => setOrgDescription(e.target.value)}
+                        placeholder="Descreva sua organização..."
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="org-country">País</Label>
+                        <Input id="org-country" value={orgCountry} onChange={(e) => setOrgCountry(e.target.value)} placeholder="País" />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-website">Website</Label>
+                        <Input id="org-website" value={orgWebsite} onChange={(e) => setOrgWebsite(e.target.value)} placeholder="https://..." />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="org-email">E-mail da Organização</Label>
+                        <Input id="org-email" type="email" value={orgEmail} onChange={(e) => setOrgEmail(e.target.value)} placeholder="contato@org.com" />
+                      </div>
+                      <div>
+                        <Label htmlFor="org-phone">Telefone da Organização</Label>
+                        <Input id="org-phone" value={formatPhone(orgPhone)} onChange={(e) => setOrgPhone(e.target.value.replace(/\D/g, ""))} placeholder="+55 (48) 99999-9999" />
+                      </div>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        if (!organization?.id) return;
+                        setSavingOrg(true);
+                        try {
+                          const { error } = await supabase
+                            .from("organizations")
+                            .update({
+                              name: orgName,
+                              description: orgDescription || null,
+                              country: orgCountry || null,
+                              website: orgWebsite || null,
+                              email: orgEmail || null,
+                              phone: orgPhone || null,
+                            })
+                            .eq("id", organization.id);
+                          if (error) throw error;
+                          await refreshProfile();
+                          toast.success("Dados da organização atualizados!");
+                        } catch (err: any) {
+                          toast.error(err.message ?? "Erro ao salvar organização.");
+                        } finally {
+                          setSavingOrg(false);
+                        }
+                      }}
+                      disabled={savingOrg}
+                    >
+                      {savingOrg && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Salvar Organização
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -420,7 +645,7 @@ export default function Settings() {
                       E-mails de marketing
                     </p>
                     <p className="text-xs text-tc-text-hint">
-                      Novidades, dicas e promocoes
+                      Novidades, dicas e promoções
                     </p>
                   </div>
                   <Switch
@@ -514,7 +739,7 @@ export default function Settings() {
           {activeTab === "pagamento" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Metodos de Pagamento</CardTitle>
+                <CardTitle className="text-lg">Métodos de Pagamento</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-12">
