@@ -77,7 +77,7 @@ function StatsRow({
       </span>
       <span className="flex items-center gap-1.5">
         <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
-        {rating} ({reviewCount} avaliacoes)
+        {rating} ({reviewCount} avaliações)
       </span>
       <span className="flex items-center gap-1.5">
         <Calendar className="h-4 w-4 text-tc-text-hint" />

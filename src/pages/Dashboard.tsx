@@ -1,6 +1,6 @@
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,6 +31,48 @@ import {
 import { dbRoleToUIRole, ROLE_CONFIG } from "@/lib/roles";
 
 /* ------------------------------------------------------------------ */
+/*  Profile completion helpers                                         */
+/* ------------------------------------------------------------------ */
+interface ProfileFields {
+  full_name?: string | null;
+  avatar_url?: string | null;
+  bio?: string | null;
+  phone?: string | null;
+  date_of_birth?: string | null;
+  nationality?: string | null;
+  passport_country?: string | null;
+  travel_style?: string | null;
+  position?: string | null;
+}
+
+const PROFILE_CHECKS: { key: keyof ProfileFields; label: string }[] = [
+  { key: "full_name", label: "Nome completo" },
+  { key: "avatar_url", label: "Foto de perfil" },
+  { key: "bio", label: "Bio" },
+  { key: "phone", label: "Telefone" },
+  { key: "date_of_birth", label: "Data de nascimento" },
+  { key: "nationality", label: "Nacionalidade" },
+  { key: "passport_country", label: "País do passaporte" },
+  { key: "travel_style", label: "Estilo de viagem" },
+];
+
+function computeProfileCompletion(profile: ProfileFields | null) {
+  if (!profile) return { percent: 0, missing: PROFILE_CHECKS.map((c) => c.label) };
+  const missing: string[] = [];
+  let filled = 0;
+  for (const check of PROFILE_CHECKS) {
+    const val = profile[check.key];
+    if (val && String(val).trim().length > 0) {
+      filled++;
+    } else {
+      missing.push(check.label);
+    }
+  }
+  const percent = Math.round((filled / PROFILE_CHECKS.length) * 100);
+  return { percent, missing };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Viajante (traveler) dashboard                                     */
 /* ------------------------------------------------------------------ */
 function ViajanteDashboard({
@@ -40,13 +82,15 @@ function ViajanteDashboard({
   openRequests,
   recentRequests,
   onSignOut,
+  profileCompletion,
 }: {
-  profile: { full_name: string; avatar_url?: string | null } | null;
+  profile: ProfileFields | null;
   requestCount: number;
   proposalCount: number;
   openRequests: number;
   onSignOut: () => void;
   recentRequests: any[];
+  profileCompletion: { percent: number; missing: string[] };
 }) {
   const firstName = profile?.full_name?.split(" ")[0] ?? "Viajante";
   const initials = profile?.full_name
@@ -61,8 +105,8 @@ function ViajanteDashboard({
   const stats = [
     { label: "Candidaturas Ativas", value: 0, icon: Calendar, color: "text-navy-500" },
     { label: "Oportunidades Salvas", value: 0, icon: Heart, color: "text-rose-500" },
-    { label: "Avaliacao Media", value: "--", icon: Star, color: "text-yellow-500" },
-    { label: "Experiencias Concluidas", value: 0, icon: CheckCircle2, color: "text-emerald-500" },
+    { label: "Avaliação Média", value: "--", icon: Star, color: "text-yellow-500" },
+    { label: "Experiências Concluídas", value: 0, icon: CheckCircle2, color: "text-emerald-500" },
   ];
 
   const quickLinks = [
@@ -71,24 +115,28 @@ function ViajanteDashboard({
       icon: GraduationCap,
       description: "Cursos e certificacoes",
       meta: "Explore os cursos",
+      href: "/academy",
     },
     {
       title: "Meus Cursos",
       icon: BookOpen,
       description: "Gerencie seus cursos",
       meta: "Veja seus cursos",
+      href: "/academy",
     },
     {
       title: "Criar Novo Curso",
       icon: Video,
       description: "Compartilhe conhecimento",
-      meta: "Monetize suas experiencias",
+      meta: "Monetize suas experiências",
+      href: "/academy/create",
     },
     {
-      title: "Integracao Bancaria",
+      title: "Integração Bancária",
       icon: DollarSign,
       description: "Receba pagamentos",
       meta: "Configure sua conta",
+      href: "/bank-integration",
     },
   ];
 
@@ -102,6 +150,7 @@ function ViajanteDashboard({
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
               <Avatar className="h-16 w-16">
+                <AvatarImage src={profile?.avatar_url ?? undefined} />
                 <AvatarFallback className="bg-navy-100 text-navy-700 text-lg font-semibold">
                   {initials}
                 </AvatarFallback>
@@ -110,7 +159,7 @@ function ViajanteDashboard({
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold tracking-tight">
-                    Ola, {firstName}! 👋
+                    Olá, {firstName}! 👋
                   </h1>
                   <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                 </div>
@@ -128,7 +177,7 @@ function ViajanteDashboard({
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full">
                 <Zap className="h-4 w-4" />
-                <span className="text-sm font-semibold">0 Creditos</span>
+                <span className="text-sm font-semibold">0 Créditos</span>
               </div>
               <Link to="/notifications" className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <Bell className="h-5 w-5 text-muted-foreground" />
@@ -152,18 +201,31 @@ function ViajanteDashboard({
       </Card>
 
       {/* ---- Profile completion ---- */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-semibold">Complete seu Perfil</h3>
-            <span className="text-sm text-muted-foreground">85%</span>
-          </div>
-          <Progress value={85} className="h-2 [&>div]:bg-rose-500" />
-          <p className="text-xs text-muted-foreground mt-2">
-            Complete seu perfil para receber mais matches!
-          </p>
-        </CardContent>
-      </Card>
+      <Link to="/settings">
+        <Card className="hover:shadow-md transition-shadow cursor-pointer">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold">Complete seu Perfil</h3>
+              <span className="text-sm text-muted-foreground">{profileCompletion.percent}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-rose-500 transition-all duration-300"
+                style={{ width: `${profileCompletion.percent}%` }}
+              />
+            </div>
+            {profileCompletion.percent < 100 ? (
+              <p className="text-xs text-muted-foreground mt-2">
+                Falta preencher: {profileCompletion.missing.join(", ")}
+              </p>
+            ) : (
+              <p className="text-xs text-emerald-600 mt-2">
+                Perfil completo! Você está pronto para receber matches.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </Link>
 
       {/* ---- Stats row ---- */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -218,7 +280,7 @@ function ViajanteDashboard({
                     </h3>
                   </div>
                   <p className="text-sm text-rose-500">
-                    Conecte-se com viajantes e anfitrioes
+                    Conecte-se com viajantes e anfitriões
                   </p>
                   <p className="text-xs text-rose-400 mt-1">
                     Interaja com a comunidade
@@ -234,21 +296,20 @@ function ViajanteDashboard({
       {/* ---- Quick-link cards ---- */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {quickLinks.map((ql) => (
-          <Card
-            key={ql.title}
-            className="hover:shadow-md transition-shadow cursor-pointer"
-          >
-            <CardContent className="p-5">
-              <ql.icon className="h-6 w-6 text-rose-500 mb-3" />
-              <h4 className="text-sm font-semibold">{ql.title}</h4>
-              <p className="text-xs text-muted-foreground mt-1">
-                {ql.description}
-              </p>
-              <p className="text-xs text-rose-500 font-medium mt-2">
-                {ql.meta}
-              </p>
-            </CardContent>
-          </Card>
+          <Link key={ql.title} to={ql.href}>
+            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+              <CardContent className="p-5">
+                <ql.icon className="h-6 w-6 text-rose-500 mb-3" />
+                <h4 className="text-sm font-semibold">{ql.title}</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {ql.description}
+                </p>
+                <p className="text-xs text-rose-500 font-medium mt-2">
+                  {ql.meta}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
@@ -346,7 +407,7 @@ function AnfitriaoDashboard({
   const stats = [
     { label: "Candidaturas", value: requestCount, icon: FileText, bg: "bg-rose-500" },
     { label: "Oportunidades", value: openRequests, icon: Briefcase, bg: "bg-rose-500" },
-    { label: "Avaliacoes", value: "--", icon: Star, bg: "bg-navy-500" },
+    { label: "Avaliações", value: "--", icon: Star, bg: "bg-navy-500" },
   ];
 
 
@@ -359,6 +420,7 @@ function AnfitriaoDashboard({
             <div className="flex items-center gap-4">
               <div className="relative">
                 <Avatar className="h-16 w-16">
+                  <AvatarImage src={profile?.avatar_url ?? undefined} />
                   <AvatarFallback className="bg-rose-100 text-rose-700 text-lg font-semibold">
                     {initials}
                   </AvatarFallback>
@@ -369,7 +431,7 @@ function AnfitriaoDashboard({
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold tracking-tight">
-                    Ola, {firstName}! 👋
+                    Olá, {firstName}! 👋
                   </h1>
                   <span className="bg-rose-500 text-white px-3 py-0.5 rounded-full text-xs font-medium">
                     Anfitriao
@@ -601,6 +663,8 @@ const Dashboard = () => {
   }
 
   /* Default: viajante dashboard */
+  const profileCompletion = computeProfileCompletion(profile);
+
   return (
     <ViajanteDashboard
       profile={profile}
@@ -609,6 +673,7 @@ const Dashboard = () => {
       openRequests={openRequests}
       recentRequests={recentRequests}
       onSignOut={signOut}
+      profileCompletion={profileCompletion}
     />
   );
 };

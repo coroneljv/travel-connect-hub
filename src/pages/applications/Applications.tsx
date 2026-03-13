@@ -22,7 +22,7 @@ export default function Applications() {
   } = useQuery({
     queryKey: ["my-applications", user?.id, page],
     queryFn: async () => {
-      if (!user?.id) throw new Error("Nao autenticado");
+      if (!user?.id) throw new Error("Não autenticado");
 
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -100,8 +100,8 @@ export default function Applications() {
             Nenhuma candidatura ainda
           </h2>
           <p className="text-sm text-tc-text-hint text-center max-w-md">
-            Quando voce se candidatar a uma oportunidade, ela aparecera aqui
-            para voce acompanhar o status.
+            Quando você se candidatar a uma oportunidade, ela aparecerá aqui
+            para você acompanhar o status.
           </p>
         </div>
       ) : (
@@ -122,7 +122,7 @@ export default function Applications() {
                   requestId={item.request_id}
                   requestTitle={req?.title ?? "Oportunidade"}
                   destination={req?.destination ?? ""}
-                  hostName={req?.organizations?.name ?? "Anfitriao"}
+                  hostName={req?.organizations?.name ?? "Anfitrião"}
                   status={item.status}
                   message={item.message}
                   createdAt={item.created_at}
@@ -151,7 +151,7 @@ export default function Applications() {
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Proxima
+                Próxima
               </Button>
             </div>
           )}

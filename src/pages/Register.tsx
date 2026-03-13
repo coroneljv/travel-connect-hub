@@ -38,41 +38,41 @@ import HostSignupApprovedModal from "@/components/modals/HostSignupApprovedModal
 // Constants
 // ---------------------------------------------------------------------------
 
-const VIAJANTE_STEP_LABELS = ["Pessoal", "Verificacao", "Habilidades", "Sobre Mim", "Viagens"];
+const VIAJANTE_STEP_LABELS = ["Pessoal", "Verificação", "Habilidades", "Sobre Mim", "Viagens"];
 const ANFITRIAO_STEP_LABELS = ["Organização", "Localização", "Informações", "Finalização"];
 
 const LANGUAGES = [
-  "Ingles",
+  "Inglês",
   "Espanhol",
-  "Alemao",
-  "Portugues",
-  "Frances",
+  "Alemão",
+  "Português",
+  "Francês",
   "Italiano",
   "Mandarim",
-  "Japones",
+  "Japonês",
   "Russo",
-  "Arabe",
-  "Holandes",
+  "Árabe",
+  "Holandês",
   "Coreano",
 ];
 
 const SKILLS = [
-  "Ensino de ingles",
+  "Ensino de inglês",
   "Atendimento ao Cliente",
   "Cozinhar",
   "Limpeza",
   "Jardinagem",
   "Marketing Digital",
-  "Construcao",
+  "Construção",
   "Fotografia",
   "Design",
   "Ensino",
   "Agricultura",
   "Cuidado de Animais",
-  "Manutencao",
-  "Recepcao",
-  "Programacao",
-  "Musica",
+  "Manutenção",
+  "Recepção",
+  "Programação",
+  "Música",
   "Arte",
   "Esporte",
   "Primeiros Socorros",
@@ -80,15 +80,15 @@ const SKILLS = [
 ];
 
 const REGIONS = [
-  "America do Norte",
-  "America Central",
-  "America do Sul",
+  "América do Norte",
+  "América Central",
+  "América do Sul",
   "Europa Central",
   "Europa Oriental",
-  "Asia",
+  "Ásia",
   "Oceania",
-  "Africa",
-  "Oriente Medio",
+  "África",
+  "Oriente Médio",
   "Caribe",
 ];
 
@@ -98,7 +98,7 @@ const DURATIONS = [
   "1-3 meses",
   "3-6 meses",
   "+6 meses",
-  "Flexivel",
+  "Flexível",
 ];
 
 const HOST_TYPES = [
@@ -350,7 +350,7 @@ const Register = () => {
     try {
       if (isViajante) {
         if (!email || !fullName) {
-          toast.error("Por favor preencha todos os campos obrigatorios.");
+          toast.error("Por favor preencha todos os campos obrigatórios.");
           setIsLoading(false);
           return;
         }
@@ -482,8 +482,8 @@ const Register = () => {
       </div>
 
       <InfoBox>
-        <strong>Por que verificacao?</strong> A verificacao de identidade protege tanto viajantes
-        quanto anfitrioes, criando uma comunidade confiavel e segura.
+        <strong>Por que verificação?</strong> A verificação de identidade protege tanto viajantes
+        quanto anfitriões, criando uma comunidade confiável e segura.
       </InfoBox>
     </div>
   );
@@ -524,7 +524,7 @@ const Register = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reg-passport">Pais do Passaporte</Label>
+        <Label htmlFor="reg-passport">País do Passaporte</Label>
         <Input
           id="reg-passport"
           placeholder="Ex: Brasil"
@@ -567,7 +567,7 @@ const Register = () => {
       </div>
 
       <div>
-        <Label className="text-base font-semibold mb-2 block">Curriculo</Label>
+        <Label className="text-base font-semibold mb-2 block">Currículo</Label>
         <label className="cursor-pointer block">
           <input
             type="file"
@@ -581,7 +581,7 @@ const Register = () => {
             ) : (
               <>
                 <Upload className="w-8 h-8 text-gray-400" />
-                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar seu curriculo (PDF)</span>
+                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar seu currículo (PDF)</span>
               </>
             )}
           </div>
@@ -596,7 +596,7 @@ const Register = () => {
         <Label htmlFor="reg-bio">Mini Biografia</Label>
         <Textarea
           id="reg-bio"
-          placeholder="Conte um pouco sobre voce, suas experiencias e o que te motiva a viajar..."
+          placeholder="Conte um pouco sobre você, suas experiências e o que te motiva a viajar..."
           value={biography}
           onChange={(e) => setBiography(e.target.value)}
           className="bg-gray-50 min-h-[120px]"
@@ -607,7 +607,7 @@ const Register = () => {
         <Label htmlFor="reg-travel-style">Estilo de Viagem</Label>
         <Input
           id="reg-travel-style"
-          placeholder="Ex: Mochileiro, Voluntario, Nomade Digital..."
+          placeholder="Ex: Mochileiro, Voluntário, Nômade Digital..."
           value={travelStyle}
           onChange={(e) => setTravelStyle(e.target.value)}
           className="bg-gray-50"
@@ -640,8 +640,8 @@ const Register = () => {
       </div>
 
       <InfoBox variant="purple">
-        <strong>Destaque seu perfil</strong> - Uma boa biografia e fotos autenticas fazem toda a
-        diferenca!
+        <strong>Destaque seu perfil</strong> — Uma boa biografia e fotos autênticas fazem toda a
+        diferença!
       </InfoBox>
     </div>
   );
@@ -649,7 +649,7 @@ const Register = () => {
   const renderViajanteViagens = () => (
     <div className="space-y-6">
       <div>
-        <Label className="text-base font-semibold mb-3 block">Regioes de Interesse</Label>
+        <Label className="text-base font-semibold mb-3 block">Regiões de Interesse</Label>
         <div className="flex flex-wrap gap-2">
           {REGIONS.map((region) => (
             <Chip
@@ -663,7 +663,7 @@ const Register = () => {
       </div>
 
       <div>
-        <Label className="text-base font-semibold mb-3 block">Duracao Preferida</Label>
+        <Label className="text-base font-semibold mb-3 block">Duração Preferida</Label>
         <div className="flex flex-wrap gap-2">
           {DURATIONS.map((dur) => (
             <Chip
@@ -677,10 +677,10 @@ const Register = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reg-prefs">Preferencias Adicionais</Label>
+        <Label htmlFor="reg-prefs">Preferências Adicionais</Label>
         <Textarea
           id="reg-prefs"
-          placeholder="Alguma preferencia ou necessidade especial que devemos saber?"
+          placeholder="Alguma preferência ou necessidade especial que devemos saber?"
           value={additionalPreferences}
           onChange={(e) => setAdditionalPreferences(e.target.value)}
           className="bg-gray-50 min-h-[100px]"
@@ -1078,7 +1078,7 @@ const Register = () => {
               Cadastro de Viajante
             </h1>
             <p className="text-muted-foreground text-sm">
-              Preencha as informacoes para criar seu perfil na plataforma.
+              Preencha as informações para criar seu perfil na plataforma.
             </p>
           </div>
         )}
@@ -1140,11 +1140,11 @@ const Register = () => {
             <CardDescription>
               {isViajante
                 ? [
-                    "Envie seus documentos e informacoes de contato",
-                    "Preencha suas informacoes pessoais",
+                    "Envie seus documentos e informações de contato",
+                    "Preencha suas informações pessoais",
                     "Selecione seus idiomas e habilidades",
-                    "Conte-nos mais sobre voce",
-                    "Defina suas preferencias de viagem",
+                    "Conte-nos mais sobre você",
+                    "Defina suas preferências de viagem",
                   ][currentStep]
                 : "Complete seu perfil para começar a receber viajantes"}
             </CardDescription>

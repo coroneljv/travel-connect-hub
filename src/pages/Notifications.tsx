@@ -25,7 +25,7 @@ export default function Notifications() {
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-tc-text-primary">Notificacoes</h1>
+        <h1 className="text-2xl font-bold text-tc-text-primary">Notificações</h1>
         {notifications.length > 0 && (
           <button className="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-600 font-medium transition-colors">
             <CheckCheck className="h-4 w-4" />

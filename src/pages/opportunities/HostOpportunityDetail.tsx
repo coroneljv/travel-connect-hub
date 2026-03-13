@@ -130,7 +130,7 @@ function useHostOpportunityDetail(id: string | undefined) {
       let publishedAgo = "hoje";
       if (diffDays >= 30) {
         const months = Math.floor(diffDays / 30);
-        publishedAgo = `${months} ${months === 1 ? "mes" : "meses"}`;
+        publishedAgo = `${months} ${months === 1 ? "mês" : "meses"}`;
       } else if (diffDays > 0) {
         publishedAgo = `${diffDays} ${diffDays === 1 ? "dia" : "dias"}`;
       }
@@ -147,7 +147,7 @@ function useHostOpportunityDetail(id: string | undefined) {
         status: data.status,
         created_at: data.created_at,
         organizationName: (data as any).organizations?.name ?? "Desconhecido",
-        hostName: (data as any).profiles?.full_name ?? "Anfitriao",
+        hostName: (data as any).profiles?.full_name ?? "Anfitrião",
         hostAvatarUrl: (data as any).profiles?.avatar_url ?? null,
         images,
         category,
@@ -190,7 +190,7 @@ export default function HostOpportunityDetail() {
 
   const handleEdit = () => {
     // TODO: navegar para tela de edição
-    toast.info("Funcionalidade de edicao em breve");
+    toast.info("Funcionalidade de edição em breve");
   };
 
   if (isLoading) return <HostDetailSkeleton />;
@@ -215,10 +215,10 @@ export default function HostOpportunityDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <h2 className="text-xl font-semibold text-tc-text-primary">
-          Oportunidade nao encontrada
+          Oportunidade não encontrada
         </h2>
         <p className="text-tc-text-hint">
-          Esta oportunidade pode ter sido removida ou o link esta incorreto.
+          Esta oportunidade pode ter sido removida ou o link está incorreto.
         </p>
         <Button variant="outline" onClick={() => navigate(-1)}>
           Voltar
@@ -290,10 +290,10 @@ export default function HostOpportunityDetail() {
             {stats.candidateCount} candidatos
           </span>
           <span className="text-sm text-tc-text-secondary">
-            {stats.viewCount} visualizacoes
+            {stats.viewCount} visualizações
           </span>
           <span className="text-sm text-tc-text-hint">
-            Publicado ha {stats.publishedAgo}
+            Publicado há {stats.publishedAgo}
           </span>
         </CardContent>
       </Card>

@@ -110,7 +110,7 @@ export default function CandidateCard({
                   </span>
                   <span className="flex items-center gap-0.5 text-xs text-tc-text-secondary">
                     <Star className="h-3 w-3 text-amber-400 fill-amber-400" />
-                    {c.rating} ({c.reviewCount} avaliacoes)
+                    {c.rating} ({c.reviewCount} avaliações)
                   </span>
                 </div>
 
@@ -144,14 +144,14 @@ export default function CandidateCard({
               </p>
             </div>
             <div>
-              <span className="text-tc-text-hint">Inicio Desejado</span>
+              <span className="text-tc-text-hint">Início Desejado</span>
               <p className="flex items-center gap-1 text-tc-text-primary font-medium mt-0.5">
                 <Calendar className="h-3 w-3" />
                 {c.desiredStartDate}
               </p>
             </div>
             <div>
-              <span className="text-tc-text-hint">Duracao</span>
+              <span className="text-tc-text-hint">Duração</span>
               <p className="flex items-center gap-1 text-tc-text-primary font-medium mt-0.5">
                 <Clock className="h-3 w-3" />
                 {c.duration}

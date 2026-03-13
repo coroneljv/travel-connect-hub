@@ -63,17 +63,17 @@ function TabSobre({ org }: { org: any }) {
       {/* Sobre Nos */}
       <div className="border border-border rounded-xl p-6 bg-white">
         <h3 className="text-base font-bold text-tc-text-primary mb-3">
-          Sobre Nos
+          Sobre Nós
         </h3>
         <p className="text-sm text-tc-text-secondary leading-relaxed">
-          {org.description || "Nenhuma descricao cadastrada"}
+          {org.description || "Nenhuma descrição cadastrada"}
         </p>
       </div>
 
       {/* Informacoes */}
       <div className="border border-border rounded-xl p-6 bg-white">
         <h3 className="text-base font-bold text-tc-text-primary mb-4">
-          Informacoes
+          Informações
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ function TabSobre({ org }: { org: any }) {
             <div>
               <p className="text-xs text-tc-text-hint">Tipo</p>
               <p className="text-sm font-medium text-tc-text-primary">
-                {org.host_type || "Nao informado"}
+                {org.host_type || "Não informado"}
               </p>
             </div>
           </div>
@@ -234,7 +234,7 @@ function TabOportunidades({ orgId }: { orgId: string }) {
 function TabPublicacoes() {
   return (
     <div className="text-center py-12">
-      <p className="text-tc-text-hint text-sm">Nenhuma publicacao encontrada</p>
+      <p className="text-tc-text-hint text-sm">Nenhuma publicação encontrada</p>
     </div>
   );
 }
@@ -253,7 +253,7 @@ function TabAvaliacoes() {
           <div className="flex flex-col items-center justify-center sm:min-w-[140px]">
             <p className="text-5xl font-bold text-tc-text-primary">--</p>
             <StarsRow rating={0} size="h-5 w-5" />
-            <p className="text-xs text-tc-text-hint mt-1">0 avaliacoes</p>
+            <p className="text-xs text-tc-text-hint mt-1">0 avaliações</p>
           </div>
 
           {/* Right: rating bars */}
@@ -278,7 +278,7 @@ function TabAvaliacoes() {
       </div>
 
       <div className="text-center py-12">
-        <p className="text-tc-text-hint text-sm">Nenhuma avaliacao encontrada</p>
+        <p className="text-tc-text-hint text-sm">Nenhuma avaliação encontrada</p>
       </div>
     </div>
   );
@@ -291,8 +291,8 @@ function TabAvaliacoes() {
 const TABS: { id: TabId; label: string }[] = [
   { id: "sobre", label: "Sobre" },
   { id: "oportunidades", label: "Oportunidades" },
-  { id: "publicacoes", label: "Publicacoes" },
-  { id: "avaliacoes", label: "Avaliacoes" },
+  { id: "publicacoes", label: "Publicações" },
+  { id: "avaliacoes", label: "Avaliações" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -352,8 +352,8 @@ export default function HostProfile() {
           </button>
         </div>
         <div className="flex flex-col items-center justify-center py-24">
-          <p className="text-lg font-semibold text-tc-text-primary">Perfil nao encontrado</p>
-          <p className="text-sm text-tc-text-hint mt-2">O anfitriao solicitado nao existe ou foi removido.</p>
+          <p className="text-lg font-semibold text-tc-text-primary">Perfil não encontrado</p>
+          <p className="text-sm text-tc-text-hint mt-2">O anfitrião solicitado não existe ou foi removido.</p>
         </div>
       </div>
     );
@@ -467,7 +467,7 @@ export default function HostProfile() {
               <div>
                 <span className="text-sm font-bold text-tc-text-primary">--</span>
                 <span className="text-xs text-tc-text-hint ml-1">
-                  Avaliacao
+                  Avaliação
                 </span>
               </div>
             </div>

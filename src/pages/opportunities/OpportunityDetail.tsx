@@ -74,10 +74,10 @@ export default function OpportunityDetail() {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
         <h2 className="text-xl font-semibold text-tc-text-primary">
-          Oportunidade nao encontrada
+          Oportunidade não encontrada
         </h2>
         <p className="text-tc-text-hint">
-          Esta oportunidade pode ter sido removida ou o link esta incorreto.
+          Esta oportunidade pode ter sido removida ou o link está incorreto.
         </p>
         <Button variant="outline" onClick={() => navigate(-1)}>
           Voltar

@@ -5,11 +5,11 @@ interface Props {
   onClose: () => void;
 }
 
-const DURATIONS = ["Curta (1 a 4 semanas)", "Media (1 a 3 meses)", "Longa (3+ meses)"];
-const LANGUAGES = ["Ingles", "Espanhol", "Portugues"];
+const DURATIONS = ["Curta (1 a 4 semanas)", "Média (1 a 3 meses)", "Longa (3+ meses)"];
+const LANGUAGES = ["Inglês", "Espanhol", "Português"];
 const SKILLS_COL = [
-  ["Ingles", "Espanhol"],
-  ["Alemao", "Atendimento Cliente"],
+  ["Inglês", "Espanhol"],
+  ["Alemão", "Atendimento Cliente"],
   ["Cozinha", "Limpeza"],
 ];
 const RATINGS = ["4.5+", "4+", "3.5+"];
@@ -39,7 +39,7 @@ export default function OpportunityFilters({ open, onClose }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <span className="text-base font-medium text-tc-text-primary">
-          Filtros Avancados
+          Filtros Avançados
         </span>
         <button onClick={onClose} className="text-tc-text-hint hover:text-tc-text-primary">
           <X className="h-4 w-4" />
@@ -51,7 +51,7 @@ export default function OpportunityFilters({ open, onClose }: Props) {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-tc-text-primary" />
-            <span className="text-sm font-medium text-tc-text-primary">Duracao</span>
+            <span className="text-sm font-medium text-tc-text-primary">Duração</span>
           </div>
           <div className="space-y-2">
             {DURATIONS.map((d) => (
@@ -94,7 +94,7 @@ export default function OpportunityFilters({ open, onClose }: Props) {
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Star className="h-4 w-4 text-tc-text-primary" />
-            <span className="text-sm font-medium text-tc-text-primary">Avaliacao Minima</span>
+            <span className="text-sm font-medium text-tc-text-primary">Avaliação Mínima</span>
           </div>
           <div className="space-y-2">
             {RATINGS.map((r) => (

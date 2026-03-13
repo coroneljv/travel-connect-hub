@@ -166,7 +166,7 @@ export default function CourseDetails() {
       <div className="flex flex-col items-center justify-center py-32 text-center">
         <BookOpen className="h-12 w-12 text-tc-text-hint mb-4" />
         <p className="text-tc-text-secondary text-lg font-medium mb-2">
-          Curso nao encontrado
+          Curso não encontrado
         </p>
         <Link
           to="/academy"
@@ -196,6 +196,10 @@ export default function CourseDetails() {
           }
           alt={course.title}
           className="absolute inset-0 w-full h-full object-cover"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src =
+              "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&h=400&fit=crop";
+          }}
         />
         <div className="absolute inset-0 bg-navy-500/80" />
         <div
@@ -256,12 +260,12 @@ export default function CourseDetails() {
           {/* Left Column - Course Content */}
           <div>
             <h2 className="text-lg font-semibold text-tc-text-primary mb-4">
-              Conteudo do Curso
+              Conteúdo do Curso
             </h2>
 
             {modules.length === 0 ? (
               <p className="text-sm text-tc-text-hint py-8 text-center">
-                Este curso ainda nao possui modulos
+                Este curso ainda não possui módulos
               </p>
             ) : (
               <div className="space-y-3">
@@ -300,10 +304,11 @@ export default function CourseDetails() {
                       {/* Expanded Lessons */}
                       {isExpanded && module.lessons.length > 0 && (
                         <div className="border-t border-border bg-gray-50/50">
-                          {module.lessons.map((lesson, lessonIndex) => (
-                            <div
+                          {module.lessons.map((lesson) => (
+                            <Link
                               key={lesson.id}
-                              className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0"
+                              to={`/academy/courses/${id}/watch?lesson=${lesson.id}`}
+                              className="flex items-center gap-3 px-4 py-3 border-b border-border last:border-b-0 hover:bg-gray-100 transition-colors cursor-pointer"
                             >
                               <div className="flex-shrink-0">
                                 {lesson.type === "quiz" ? (
@@ -324,7 +329,7 @@ export default function CourseDetails() {
                                   ? `${lesson.duration_minutes} min`
                                   : "--"}
                               </span>
-                            </div>
+                            </Link>
                           ))}
                         </div>
                       )}
@@ -352,9 +357,9 @@ export default function CourseDetails() {
             {/* Course Info Card */}
             <div className="border border-border rounded-lg p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-tc-text-hint">Nivel</span>
+                <span className="text-sm text-tc-text-hint">Nível</span>
                 <span className="text-sm font-medium text-tc-text-primary">
-                  {course.level || "Nao especificado"}
+                  {course.level || "Não especificado"}
                 </span>
               </div>
               <div className="border-t border-border" />
@@ -362,14 +367,14 @@ export default function CourseDetails() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-tc-text-hint">Idioma</span>
                 <span className="text-sm font-medium text-tc-text-primary">
-                  {course.language || "Portugues"}
+                  {course.language || "Português"}
                 </span>
               </div>
               <div className="border-t border-border" />
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-tc-text-hint">
-                  Ultima atualizacao
+                  Última atualização
                 </span>
                 <span className="text-sm font-medium text-tc-text-primary">
                   {lastUpdateFormatted}

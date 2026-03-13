@@ -144,7 +144,7 @@ export default function HostOpportunities() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por titulo ou localizacao..."
+            placeholder="Buscar por título ou localização..."
             className="flex-1 bg-transparent text-sm text-tc-text-primary placeholder:text-tc-text-placeholder outline-none"
           />
         </div>

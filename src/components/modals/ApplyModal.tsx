@@ -25,10 +25,10 @@ interface ApplyModalProps {
 const MAX_CHARS = 500;
 
 const INFO_ITEMS = [
-  "Certifique-se de que suas datas estao corretas",
+  "Certifique-se de que suas datas estão corretas",
   "Seja claro e honesto em sua mensagem",
   "Destaque suas habilidades relevantes",
-  "O anfitriao respondera em ate 48 horas",
+  "O anfitrião responderá em até 48 horas",
 ];
 
 export default function ApplyModal({
@@ -99,7 +99,7 @@ export default function ApplyModal({
         <div className="space-y-2">
           <div className="flex items-baseline justify-between">
             <label className="text-base font-medium text-tc-text-label">
-              Mensagem para o anfitriao
+              Mensagem para o anfitrião
             </label>
             <span className="text-sm text-tc-text-hint">
               ({charCount}/{MAX_CHARS})
@@ -112,7 +112,7 @@ export default function ApplyModal({
                 setMessage(e.target.value);
               }
             }}
-            placeholder="Conte ao anfitriao por que voce e ideal para esta oportunidade. Mencione suas habilidades relevantes, experiencias anteriores e o que voce espera aprender..."
+            placeholder="Conte ao anfitrião por que você é ideal para esta oportunidade. Mencione suas habilidades relevantes, experiências anteriores e o que você espera aprender..."
             className="min-h-[200px] bg-[#F3F3F3] border-border rounded-lg text-sm placeholder:text-tc-text-placeholder resize-none"
           />
         </div>

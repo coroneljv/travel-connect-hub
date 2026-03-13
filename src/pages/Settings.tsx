@@ -17,14 +17,15 @@ import {
   LogOut,
   Loader2,
   Clock,
+  Camera,
 } from "lucide-react";
 
 type SettingsTab = "conta" | "notificacoes" | "seguranca" | "idioma" | "pagamento";
 
 const TABS: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
   { key: "conta", label: "Conta", icon: <User className="h-4 w-4" /> },
-  { key: "notificacoes", label: "Notificacoes", icon: <Bell className="h-4 w-4" /> },
-  { key: "seguranca", label: "Seguranca", icon: <Lock className="h-4 w-4" /> },
+  { key: "notificacoes", label: "Notificações", icon: <Bell className="h-4 w-4" /> },
+  { key: "seguranca", label: "Segurança", icon: <Lock className="h-4 w-4" /> },
   { key: "idioma", label: "Idioma", icon: <Globe className="h-4 w-4" /> },
   { key: "pagamento", label: "Pagamento", icon: <CreditCard className="h-4 w-4" /> },
 ];
@@ -53,23 +54,74 @@ function loadJson<T>(key: string, fallback: T): T {
   return fallback;
 }
 
+function formatPhone(raw: string): string {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length === 0) return "";
+  if (digits.length <= 2) return `+${digits}`;
+  if (digits.length <= 4) return `+${digits.slice(0, 2)} (${digits.slice(2)}`;
+  if (digits.length <= 9)
+    return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4)}`;
+  if (digits.length <= 13)
+    return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9, 13)}`;
+  return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9, 13)}`;
+}
+
 export default function Settings() {
-  const { profile, user, signOut } = useAuth();
+  const { profile, user, signOut, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>("conta");
 
   // --- Conta ---
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [passportCountry, setPassportCountry] = useState("");
+  const [travelStyle, setTravelStyle] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     if (profile) {
       setFullName(profile.full_name ?? "");
-      setPhone((profile as any).phone ?? "");
-      setBio((profile as any).bio ?? "");
+      setPhone(profile.phone ?? "");
+      setBio(profile.bio ?? "");
+      setDateOfBirth(profile.date_of_birth ?? "");
+      setNationality(profile.nationality ?? "");
+      setPassportCountry(profile.passport_country ?? "");
+      setTravelStyle(profile.travel_style ?? "");
+      setAvatarUrl(profile.avatar_url ?? "");
     }
   }, [profile]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !profile?.id) return;
+    setUploadingAvatar(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `avatars/${profile.id}.${ext}`;
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+      const url = urlData.publicUrl;
+      const { error } = await supabase
+        .from("profiles")
+        .update({ avatar_url: url })
+        .eq("id", profile.id);
+      if (error) throw error;
+      setAvatarUrl(url);
+      await refreshProfile();
+      toast.success("Foto atualizada!");
+    } catch (err: any) {
+      toast.error(err.message ?? "Erro ao enviar foto.");
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   const handleSaveProfile = async () => {
     if (!profile?.id) return;
@@ -77,12 +129,21 @@ export default function Settings() {
     try {
       const { error } = await supabase
         .from("profiles")
-        .update({ full_name: fullName, phone, bio })
+        .update({
+          full_name: fullName,
+          phone,
+          bio,
+          date_of_birth: dateOfBirth || null,
+          nationality: nationality || null,
+          passport_country: passportCountry || null,
+          travel_style: travelStyle || null,
+        })
         .eq("id", profile.id);
       if (error) throw error;
+      await refreshProfile();
       toast.success("Dados atualizados com sucesso!");
     } catch (err: any) {
-      toast.error(err.message ?? "Erro ao salvar alteracoes.");
+      toast.error(err.message ?? "Erro ao salvar alterações.");
     } finally {
       setSavingProfile(false);
     }
@@ -101,7 +162,7 @@ export default function Settings() {
 
   const handleSaveNotif = () => {
     localStorage.setItem("tc_notif_prefs", JSON.stringify(notifPrefs));
-    toast.success("Preferencias de notificacao salvas!");
+    toast.success("Preferências de notificação salvas!");
   };
 
   // --- Seguranca ---
@@ -111,11 +172,11 @@ export default function Settings() {
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
-      toast.error("A senha deve ter no minimo 6 caracteres.");
+      toast.error("A senha deve ter no mínimo 6 caracteres.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("As senhas nao coincidem.");
+      toast.error("As senhas não coincidem.");
       return;
     }
     setSavingPassword(true);
@@ -141,12 +202,12 @@ export default function Settings() {
 
   const handleSaveLang = () => {
     localStorage.setItem("tc_lang_prefs", JSON.stringify(langPrefs));
-    toast.success("Preferencias de idioma salvas!");
+    toast.success("Preferências de idioma salvas!");
   };
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold text-tc-text-primary mb-6">Configuracoes</h1>
+      <h1 className="text-2xl font-bold text-tc-text-primary mb-6">Configurações</h1>
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar tabs */}
@@ -182,9 +243,48 @@ export default function Settings() {
           {activeTab === "conta" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Informacoes da Conta</CardTitle>
+                <CardTitle className="text-lg">Informações da Conta</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Avatar */}
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    {avatarUrl ? (
+                      <img
+                        src={avatarUrl}
+                        alt=""
+                        referrerPolicy="no-referrer"
+                        className="h-16 w-16 rounded-full object-cover border-2 border-border"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-full bg-navy-100 flex items-center justify-center text-navy-600 font-bold text-lg">
+                        {fullName?.slice(0, 2).toUpperCase() || "?"}
+                      </div>
+                    )}
+                    <label
+                      htmlFor="avatar-upload"
+                      className="absolute -bottom-1 -right-1 h-7 w-7 rounded-full bg-rose-500 flex items-center justify-center cursor-pointer hover:bg-rose-600 transition-colors"
+                    >
+                      {uploadingAvatar ? (
+                        <Loader2 className="h-3.5 w-3.5 text-white animate-spin" />
+                      ) : (
+                        <Camera className="h-3.5 w-3.5 text-white" />
+                      )}
+                    </label>
+                    <input
+                      id="avatar-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Foto de Perfil</p>
+                    <p className="text-xs text-tc-text-hint">JPG, PNG. Recomendado 200x200px.</p>
+                  </div>
+                </div>
+
                 <div>
                   <Label htmlFor="name">Nome completo</Label>
                   <Input
@@ -203,17 +303,63 @@ export default function Settings() {
                     className="bg-gray-50"
                   />
                   <p className="text-xs text-tc-text-hint mt-1">
-                    O e-mail nao pode ser alterado por aqui.
+                    O e-mail não pode ser alterado por aqui.
                   </p>
                 </div>
                 <div>
                   <Label htmlFor="phone">Telefone</Label>
                   <Input
                     id="phone"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+55 (11) 99999-9999"
+                    value={formatPhone(phone)}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
+                    placeholder="+55 (48) 99999-9999"
+                    maxLength={19}
                   />
+                </div>
+                <div>
+                  <Label htmlFor="dob">Data de nascimento</Label>
+                  <Input
+                    id="dob"
+                    type="date"
+                    value={dateOfBirth}
+                    onChange={(e) => setDateOfBirth(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nationality">Nacionalidade</Label>
+                  <Input
+                    id="nationality"
+                    value={nationality}
+                    onChange={(e) => setNationality(e.target.value)}
+                    placeholder="Ex: Brasileira"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="passport">País do passaporte</Label>
+                  <Input
+                    id="passport"
+                    value={passportCountry}
+                    onChange={(e) => setPassportCountry(e.target.value)}
+                    placeholder="Ex: Brasil"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="travel-style">Estilo de viagem</Label>
+                  <select
+                    id="travel-style"
+                    className="w-full mt-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                    value={travelStyle}
+                    onChange={(e) => setTravelStyle(e.target.value)}
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="Mochileiro">Mochileiro</option>
+                    <option value="Voluntario">Voluntário</option>
+                    <option value="Nomade Digital">Nômade Digital</option>
+                    <option value="Aventureiro">Aventureiro</option>
+                    <option value="Cultural">Cultural</option>
+                    <option value="Ecologico">Ecológico</option>
+                    <option value="Luxo">Luxo</option>
+                  </select>
                 </div>
                 <div>
                   <Label htmlFor="bio">Bio</Label>
@@ -221,13 +367,13 @@ export default function Settings() {
                     id="bio"
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Conte um pouco sobre voce..."
+                    placeholder="Conte um pouco sobre você..."
                     rows={4}
                   />
                 </div>
                 <Button onClick={handleSaveProfile} disabled={savingProfile}>
                   {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Salvar Alteracoes
+                  Salvar Alterações
                 </Button>
               </CardContent>
             </Card>
@@ -237,16 +383,16 @@ export default function Settings() {
           {activeTab === "notificacoes" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Preferencias de Notificacao</CardTitle>
+                <CardTitle className="text-lg">Preferências de Notificação</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-tc-text-primary">
-                      Notificacoes por e-mail
+                      Notificações por e-mail
                     </p>
                     <p className="text-xs text-tc-text-hint">
-                      Receba atualizacoes sobre candidaturas e mensagens
+                      Receba atualizações sobre candidaturas e mensagens
                     </p>
                   </div>
                   <Switch
@@ -257,7 +403,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-tc-text-primary">
-                      Notificacoes push
+                      Notificações push
                     </p>
                     <p className="text-xs text-tc-text-hint">
                       Receba alertas no navegador
@@ -282,7 +428,7 @@ export default function Settings() {
                     onCheckedChange={(v) => updateNotif("marketing", v)}
                   />
                 </div>
-                <Button onClick={handleSaveNotif}>Salvar Preferencias</Button>
+                <Button onClick={handleSaveNotif}>Salvar Preferências</Button>
               </CardContent>
             </Card>
           )}
@@ -291,7 +437,7 @@ export default function Settings() {
           {activeTab === "seguranca" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Seguranca</CardTitle>
+                <CardTitle className="text-lg">Segurança</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -326,7 +472,7 @@ export default function Settings() {
           {activeTab === "idioma" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Idioma e Regiao</CardTitle>
+                <CardTitle className="text-lg">Idioma e Região</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
@@ -338,13 +484,13 @@ export default function Settings() {
                       setLangPrefs((prev) => ({ ...prev, language: e.target.value }))
                     }
                   >
-                    <option value="pt-BR">Portugues (Brasil)</option>
+                    <option value="pt-BR">Português (Brasil)</option>
                     <option value="en">English</option>
-                    <option value="es">Espanol</option>
+                    <option value="es">Español</option>
                   </select>
                 </div>
                 <div>
-                  <Label>Fuso horario</Label>
+                  <Label>Fuso horário</Label>
                   <select
                     className="w-full mt-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm"
                     value={langPrefs.timezone}
@@ -352,7 +498,7 @@ export default function Settings() {
                       setLangPrefs((prev) => ({ ...prev, timezone: e.target.value }))
                     }
                   >
-                    <option value="America/Sao_Paulo">Brasilia (GMT-3)</option>
+                    <option value="America/Sao_Paulo">Brasília (GMT-3)</option>
                     <option value="America/New_York">New York (GMT-5)</option>
                     <option value="Europe/London">London (GMT+0)</option>
                     <option value="Europe/Lisbon">Lisboa (GMT+0)</option>
@@ -379,8 +525,8 @@ export default function Settings() {
                     Em breve
                   </p>
                   <p className="text-sm text-tc-text-secondary max-w-xs mx-auto">
-                    Estamos preparando a integracao com meios de pagamento. Voce sera
-                    notificado quando estiver disponivel.
+                    Estamos preparando a integração com meios de pagamento. Você será
+                    notificado quando estiver disponível.
                   </p>
                 </div>
               </CardContent>

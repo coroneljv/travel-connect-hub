@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   ArrowLeft,
@@ -59,6 +59,7 @@ interface FlatLesson {
 
 export default function WatchCourse() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<"content" | "resources">(
     "content"
   );
@@ -149,6 +150,13 @@ export default function WatchCourse() {
 
       setFlatLessons(flat);
 
+      // Jump to requested lesson from query param
+      const requestedLesson = searchParams.get("lesson");
+      if (requestedLesson && flat.length > 0) {
+        const idx = flat.findIndex((l) => l.id === requestedLesson);
+        if (idx >= 0) setCurrentLessonIndex(idx);
+      }
+
       // Check if course was already completed (from localStorage)
       try {
         const saved = localStorage.getItem(`tc_completed_${id}`);
@@ -178,7 +186,7 @@ export default function WatchCourse() {
       <div className="flex flex-col items-center justify-center py-32 text-center">
         <BookOpen className="h-12 w-12 text-tc-text-hint mb-4" />
         <p className="text-tc-text-secondary text-lg font-medium mb-2">
-          Curso nao encontrado
+          Curso não encontrado
         </p>
         <Link
           to="/academy"
@@ -271,7 +279,7 @@ export default function WatchCourse() {
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <BookOpen className="h-12 w-12 text-tc-text-hint mb-4" />
             <p className="text-tc-text-secondary text-sm">
-              Este curso ainda nao possui aulas
+              Este curso ainda não possui aulas
             </p>
           </div>
         ) : (
@@ -294,7 +302,7 @@ export default function WatchCourse() {
                         <div className="text-center">
                           <Play className="h-16 w-16 text-white/40 mx-auto mb-2" />
                           <p className="text-white/50 text-sm">
-                            Video nao disponivel para esta aula
+                            Vídeo não disponível para esta aula
                           </p>
                         </div>
                       </div>
@@ -502,7 +510,7 @@ export default function WatchCourse() {
                         </h3>
                         {resources.length === 0 ? (
                           <p className="text-sm text-tc-text-hint py-4 text-center">
-                            Nenhum material disponivel
+                            Nenhum material disponível
                           </p>
                         ) : (
                           <div className="space-y-2">
@@ -549,20 +557,20 @@ export default function WatchCourse() {
             </div>
 
             <h2 className="text-xl font-bold text-tc-text-primary mb-2">
-              Parabens! Curso Concluido!
+              Parabéns! Curso Concluído!
             </h2>
             <p className="text-sm text-tc-text-secondary mb-6">
-              Voce completou todas as {totalLessons} aulas do curso{" "}
+              Você completou todas as {totalLessons} aulas do curso{" "}
               <span className="font-medium text-tc-text-primary">
                 {course.title}
               </span>
-              . Seu certificado esta disponivel.
+              . Seu certificado está disponível.
             </p>
 
             <div className="border border-border rounded-lg p-6 mb-6 bg-warm-gray">
               <Award className="h-10 w-10 text-navy-500 mx-auto mb-3" />
               <p className="text-xs text-tc-text-hint uppercase tracking-wider mb-1">
-                Certificado de Conclusao
+                Certificado de Conclusão
               </p>
               <p className="text-base font-semibold text-tc-text-primary">
                 {course.title}

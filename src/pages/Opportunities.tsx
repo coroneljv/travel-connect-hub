@@ -25,27 +25,27 @@ const FALLBACK_IMAGES = [
 const TABS = [
   { key: "all", label: "Oportunidades", icon: Globe },
   { key: "volunteer", label: "Voluntariado", icon: SmilePlus },
-  { key: "exchange", label: "Intercambio", icon: Briefcase },
+  { key: "exchange", label: "Intercâmbio", icon: Briefcase },
   { key: "favorites", label: "Favoritos", icon: Heart },
 ] as const;
 
 // TODO: persistir favoritos no DB ou localStorage
 const SECTION_TITLES: Record<string, { title: string; subtitle: string }> = {
   all: {
-    title: "Recomendados para Voce",
+    title: "Recomendados para Você",
     subtitle: "Oportunidades com maior compatibilidade com seu perfil",
   },
   volunteer: {
     title: "Voluntariado",
-    subtitle: "Oportunidades de trabalho voluntario em troca de hospedagem",
+    subtitle: "Oportunidades de trabalho voluntário em troca de hospedagem",
   },
   exchange: {
-    title: "Intercambio",
-    subtitle: "Programas de intercambio cultural e profissional",
+    title: "Intercâmbio",
+    subtitle: "Programas de intercâmbio cultural e profissional",
   },
   favorites: {
     title: "Seus Favoritos",
-    subtitle: "Oportunidades que voce salvou",
+    subtitle: "Oportunidades que você salvou",
   },
 };
 
@@ -186,7 +186,7 @@ const Opportunities = () => {
         ) : filtered.length === 0 ? (
           <div className="bg-white border border-border rounded-md py-16 text-center text-tc-text-hint">
             {activeTab === "favorites"
-              ? "Voce ainda nao favoritou nenhuma oportunidade. Clique no coracao para salvar!"
+              ? "Você ainda não favoritou nenhuma oportunidade. Clique no coração para salvar!"
               : "Nenhuma oportunidade encontrada."}
           </div>
         ) : (

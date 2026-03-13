@@ -164,7 +164,7 @@ function CourseCard({
           <p className="text-xs text-tc-text-hint">{course.author}</p>
           <div className="flex items-center gap-2 text-xs text-tc-text-secondary">
             <span>
-              {course.modules} modulos
+              {course.modules} módulos
             </span>
             <span className="text-tc-text-hint">-</span>
             <span>{course.hours}h</span>
@@ -281,12 +281,12 @@ function TabDescobrir({
   const heroTitle =
     uiRole === "viajante"
       ? "Trilha Profissional de Hospitalidade"
-      : "Como Criar Experiencias Unicas para Viajantes";
+      : "Como Criar Experiências Únicas para Viajantes";
 
   const heroDescription =
     uiRole === "viajante"
       ? "Desenvolva habilidades profissionais em hospitalidade e destaque-se no mercado. Aprenda com os melhores especialistas do setor."
-      : "Aprenda tecnicas e estrategias para transformar seu hostel em uma experiencia inesquecivel para viajantes de todo o mundo.";
+      : "Aprenda técnicas e estratégias para transformar seu hostel em uma experiência inesquecível para viajantes de todo o mundo.";
 
   const heroCourse = courses.length > 0 ? courses[0] : null;
 
@@ -317,7 +317,7 @@ function TabDescobrir({
           {/* Course info */}
           {heroCourse && (
             <p className="text-white/70 text-sm mb-1">
-              {heroCourse.modules} modulos - {heroCourse.hours} horas
+              {heroCourse.modules} módulos - {heroCourse.hours} horas
             </p>
           )}
           {/* Title */}
@@ -343,7 +343,7 @@ function TabDescobrir({
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-500/80 text-white font-medium text-sm hover:bg-rose-500 transition-colors"
               >
                 <Info className="h-4 w-4" />
-                Mais Informacoes
+                Mais Informações
               </Link>
             </div>
           )}
@@ -382,7 +382,7 @@ function TabDescobrir({
 
       {/* Section title */}
       {courses.length === 0 ? (
-        <EmptyState message="Nenhum curso disponivel" />
+        <EmptyState message="Nenhum curso disponível" />
       ) : uiRole === "anfitriao" ? (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -471,7 +471,7 @@ function MeusCursosAnfitriao() {
             Compartilhe seu conhecimento!
           </h2>
           <p className="text-white/80 text-sm mb-4">
-            Crie cursos e compartilhe sua experiencia com viajantes e anfitrioes
+            Crie cursos e compartilhe sua experiência com viajantes e anfitriões
             de todo o mundo. Monetize seu conhecimento.
           </p>
           <Link
@@ -528,7 +528,7 @@ function MeusCursosAnfitriao() {
               <Star className="h-6 w-6 text-yellow-500" />
             </div>
             <div>
-              <p className="text-sm text-tc-text-hint">Avaliacao Media</p>
+              <p className="text-sm text-tc-text-hint">Avaliação Média</p>
               <p className="text-2xl font-bold text-tc-text-primary">--</p>
             </div>
           </CardContent>
@@ -541,7 +541,7 @@ function MeusCursosAnfitriao() {
           Seus Cursos
         </h3>
         {courses.length === 0 ? (
-          <EmptyState message="Voce ainda nao criou nenhum curso" />
+          <EmptyState message="Você ainda não criou nenhum curso" />
         ) : (
           courses.map((course) => (
             <Card key={course.id} className="overflow-hidden">
@@ -559,7 +559,7 @@ function MeusCursosAnfitriao() {
                       {course.title}
                     </h4>
                     <p className="text-sm text-tc-text-hint mb-2">
-                      {course.subtitle || "Sem descricao"}
+                      {course.subtitle || "Sem descrição"}
                     </p>
                     <div className="flex flex-wrap gap-4 text-sm text-tc-text-secondary mb-3">
                       <span className="flex items-center gap-1">
@@ -572,7 +572,7 @@ function MeusCursosAnfitriao() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Award className="h-4 w-4 text-tc-text-hint" />
-                        Taxa de conclusao: 0%
+                        Taxa de conclusão: 0%
                       </span>
                     </div>
                   </div>
@@ -620,7 +620,7 @@ function MeusCursosViajante() {
             Continuar Assistindo
           </h2>
         </div>
-        <EmptyState message="Voce ainda nao esta matriculado em nenhum curso" />
+        <EmptyState message="Você ainda não está matriculado em nenhum curso" />
       </div>
 
       {/* Cursos matriculados */}
@@ -631,7 +631,7 @@ function MeusCursosViajante() {
             Cursos Matriculados
           </h2>
         </div>
-        <EmptyState message="Voce ainda nao esta matriculado em nenhum curso" />
+        <EmptyState message="Você ainda não está matriculado em nenhum curso" />
       </div>
     </div>
   );
@@ -651,7 +651,7 @@ function TabMeuAprendizado() {
             Continuar Assistindo
           </h2>
         </div>
-        <EmptyState message="Voce ainda nao esta matriculado em nenhum curso" />
+        <EmptyState message="Você ainda não está matriculado em nenhum curso" />
       </div>
 
       {/* Finalizados */}
@@ -662,7 +662,7 @@ function TabMeuAprendizado() {
             Finalizados
           </h2>
         </div>
-        <EmptyState message="Voce ainda nao finalizou nenhum curso" />
+        <EmptyState message="Você ainda não finalizou nenhum curso" />
       </div>
     </div>
   );

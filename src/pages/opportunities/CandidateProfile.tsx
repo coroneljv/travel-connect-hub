@@ -97,7 +97,7 @@ function LanguageBar({ lang }: { lang: Language }) {
 
 function ExperienceCard({ exp }: { exp: Experience }) {
   const typeBg =
-    exp.type === "Intercambio"
+    exp.type === "Intercâmbio"
       ? "bg-rose-50 text-rose-600 border-rose-200"
       : "bg-tc-green-bg text-tc-green-text border-tc-green-border";
   return (
@@ -197,7 +197,7 @@ export default function CandidateProfile() {
         avatarUrl: data.avatar_url,
         coverUrl: "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=1200&h=300&fit=crop",
         isVerified: true,
-        bio: data.bio ?? "Nenhuma descricao disponivel",
+        bio: data.bio ?? "Nenhuma descrição disponível",
         experienceCount: 0,
         rating: Math.round(avgRating * 10) / 10,
         reviewCount: reviewCount ?? 0,
@@ -217,8 +217,8 @@ export default function CandidateProfile() {
   if (!profile) {
     return (
       <div className="flex flex-col items-center justify-center py-20 space-y-4">
-        <h2 className="text-xl font-semibold text-tc-text-primary">Perfil nao encontrado</h2>
-        <p className="text-tc-text-hint">Este perfil pode ter sido removido ou o link esta incorreto.</p>
+        <h2 className="text-xl font-semibold text-tc-text-primary">Perfil não encontrado</h2>
+        <p className="text-tc-text-hint">Este perfil pode ter sido removido ou o link está incorreto.</p>
         <Button variant="outline" onClick={() => navigate(-1)}>Voltar</Button>
       </div>
     );
@@ -301,7 +301,7 @@ export default function CandidateProfile() {
               variant="outline"
               size="sm"
               className="gap-1.5 shrink-0 mb-1"
-              onClick={() => toast.info("Funcao de edicao em breve")}
+              onClick={() => toast.info("Função de edição em breve")}
             >
               <Mail className="h-3.5 w-3.5" />
               Editar
@@ -336,7 +336,7 @@ export default function CandidateProfile() {
                 {profile.experienceCount}
               </span>
               <span className="text-xs text-tc-text-hint ml-1">
-                Experiencias
+                Experiências
               </span>
             </div>
           </CardContent>
@@ -349,7 +349,7 @@ export default function CandidateProfile() {
                 {profile.rating}
               </span>
               <span className="text-xs text-tc-text-hint ml-1">
-                {profile.reviewCount} avaliacoes
+                {profile.reviewCount} avaliações
               </span>
             </div>
           </CardContent>
@@ -361,7 +361,7 @@ export default function CandidateProfile() {
               <span className="text-lg font-bold text-tc-text-primary">
                 {profile.countryCount}
               </span>
-              <span className="text-xs text-tc-text-hint ml-1">Paises</span>
+              <span className="text-xs text-tc-text-hint ml-1">Países</span>
             </div>
           </CardContent>
         </Card>
@@ -387,7 +387,7 @@ export default function CandidateProfile() {
           <Card>
             <CardContent className="p-6">
               <h3 className="text-sm font-semibold text-tc-text-primary mb-4">
-                Experiencias
+                Experiências
               </h3>
               <div className="space-y-5">
                 {profile.experiences.map((exp, i) => (

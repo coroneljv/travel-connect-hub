@@ -111,7 +111,7 @@ function buildFromRow(row: any): OpportunityDetail {
     status: row.status,
     created_at: row.created_at,
     organizationName: row.organizations?.name ?? "Desconhecido",
-    hostName: row.profiles?.full_name ?? "Anfitriao",
+    hostName: row.profiles?.full_name ?? "Anfitrião",
     hostAvatarUrl: row.profiles?.avatar_url ?? null,
 
     images,
@@ -127,7 +127,7 @@ function buildFromRow(row: any): OpportunityDetail {
     responsibilities,
     skills,
     tipText:
-      "Entre em contato com o anfitriao antes de se candidatar para tirar duvidas e se destacar!",
+      "Entre em contato com o anfitrião antes de se candidatar para tirar dúvidas e se destacar!",
     superLikeCredits: 0,
     houseRules: row.house_rules ?? null,
   };
@@ -137,7 +137,7 @@ export function useOpportunityDetail(id: string | undefined) {
   return useQuery({
     queryKey: ["opportunity-detail", id],
     queryFn: async () => {
-      if (!id) throw new Error("ID nao fornecido");
+      if (!id) throw new Error("ID não fornecido");
 
       const { data, error } = await supabase
         .from("requests")

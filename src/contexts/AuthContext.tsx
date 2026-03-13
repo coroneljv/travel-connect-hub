@@ -13,6 +13,12 @@ interface AuthContextType {
     organization_id: string | null;
     position: string | null;
     avatar_url?: string | null;
+    bio?: string | null;
+    phone?: string | null;
+    date_of_birth?: string | null;
+    nationality?: string | null;
+    passport_country?: string | null;
+    travel_style?: string | null;
   } | null;
   userRole: AppRole | null;
   uiRole: UIRole | null;
@@ -31,6 +37,7 @@ interface AuthContextType {
   }) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -57,7 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { data: profileData } = await supabase
         .from("profiles")
-        .select("id, full_name, organization_id, position, avatar_url")
+        .select("id, full_name, organization_id, position, avatar_url, bio, phone, date_of_birth, nationality, passport_country, travel_style")
         .eq("id", userId)
         .single();
 
@@ -178,6 +185,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) throw error;
   };
 
+  const refreshProfile = async () => {
+    if (user) {
+      await fetchUserData(user.id);
+    }
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
@@ -200,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         signUp,
         signIn,
         signOut,
+        refreshProfile,
       }}
     >
       {children}
