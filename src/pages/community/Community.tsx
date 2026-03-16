@@ -62,6 +62,123 @@ const HOST_TYPE_FILTERS = [
 ];
 
 // ---------------------------------------------------------------------------
+// PostCard — adaptive layout based on image orientation
+// ---------------------------------------------------------------------------
+
+function PostCard({ post }: { post: any }) {
+  const [orientation, setOrientation] = useState<"portrait" | "landscape" | "square" | null>(null);
+
+  const aspect: number | null = post.image_aspect ?? null;
+
+  useEffect(() => {
+    if (!post.image_url) return;
+    // If we already have aspect stored, use it
+    if (aspect) {
+      if (aspect < 0.9) setOrientation("portrait");
+      else if (aspect > 1.1) setOrientation("landscape");
+      else setOrientation("square");
+      return;
+    }
+    // Otherwise detect from image load
+    const img = new window.Image();
+    img.onload = () => {
+      const r = img.naturalWidth / img.naturalHeight;
+      if (r < 0.9) setOrientation("portrait");
+      else if (r > 1.1) setOrientation("landscape");
+      else setOrientation("square");
+    };
+    img.src = post.image_url;
+  }, [post.image_url, aspect]);
+
+  const authorAvatar = post.profiles?.avatar_url ? (
+    <img
+      src={post.profiles.avatar_url}
+      alt=""
+      referrerPolicy="no-referrer"
+      className="w-10 h-10 rounded-full object-cover shrink-0"
+    />
+  ) : (
+    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm shrink-0">
+      {post.profiles?.full_name?.[0]?.toUpperCase() || "?"}
+    </div>
+  );
+
+  const authorInfo = (
+    <div className="flex items-center gap-3">
+      {authorAvatar}
+      <div className="min-w-0">
+        <p className="text-sm font-bold text-tc-text-primary truncate">
+          {post.profiles?.full_name || "Usuário"}
+        </p>
+        {post.location && (
+          <p className="text-xs text-tc-text-hint flex items-center gap-1">
+            <MapPin className="h-3 w-3 shrink-0" />
+            {post.location}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
+  const dateStr = new Date(post.created_at).toLocaleDateString("pt-BR");
+
+  const footer = (
+    <div className="flex items-center gap-4 text-tc-text-hint text-xs">
+      <span>{post.likes_count || 0} curtidas</span>
+      <span>{post.comments_count || 0} comentários</span>
+    </div>
+  );
+
+  // PORTRAIT / VERTICAL — side by side: image left, content right
+  if (post.image_url && orientation === "portrait") {
+    return (
+      <div className="bg-white rounded-xl border border-border overflow-hidden flex flex-col sm:flex-row">
+        <div className="sm:w-2/5 shrink-0 bg-gray-100">
+          <img
+            src={post.image_url}
+            alt=""
+            className="w-full h-full object-cover sm:max-h-[400px]"
+          />
+        </div>
+        <div className="flex-1 p-5 flex flex-col justify-between gap-3">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              {authorInfo}
+              <span className="text-xs text-tc-text-hint whitespace-nowrap ml-2">{dateStr}</span>
+            </div>
+            <p className="text-sm text-tc-text-primary">{post.content}</p>
+          </div>
+          {footer}
+        </div>
+      </div>
+    );
+  }
+
+  // LANDSCAPE / HORIZONTAL / SQUARE — stacked: image on top, content below
+  return (
+    <div className="bg-white rounded-xl border border-border overflow-hidden">
+      {post.image_url && (
+        <div className="bg-gray-100">
+          <img
+            src={post.image_url}
+            alt=""
+            className="w-full max-h-[450px] object-cover"
+          />
+        </div>
+      )}
+      <div className="p-5 space-y-3">
+        <div className="flex items-center justify-between">
+          {authorInfo}
+          <span className="text-xs text-tc-text-hint whitespace-nowrap ml-2">{dateStr}</span>
+        </div>
+        <p className="text-sm text-tc-text-primary">{post.content}</p>
+        {footer}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Tab: Feed
 // ---------------------------------------------------------------------------
 
@@ -104,45 +221,7 @@ function TabFeed({
       {posts.length > 0 && (
         <div className="flex flex-col gap-4">
           {posts.map((post) => (
-            <div key={post.id} className="bg-white rounded-xl border border-border p-5 space-y-3">
-              <div className="flex items-center gap-3">
-                {post.profiles?.avatar_url ? (
-                  <img
-                    src={post.profiles.avatar_url}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm">
-                    {post.profiles?.full_name?.[0]?.toUpperCase() || "?"}
-                  </div>
-                )}
-                <div>
-                  <p className="text-sm font-bold text-tc-text-primary">{post.profiles?.full_name || "Usuário"}</p>
-                  {post.location && (
-                    <p className="text-xs text-tc-text-hint">{post.location}</p>
-                  )}
-                </div>
-                <span className="ml-auto text-xs text-tc-text-hint">
-                  {new Date(post.created_at).toLocaleDateString("pt-BR")}
-                </span>
-              </div>
-              {post.image_url && (
-                <div className="rounded-lg overflow-hidden bg-gray-100">
-                  <img
-                    src={post.image_url}
-                    alt=""
-                    className="w-full max-h-[500px] object-contain mx-auto"
-                  />
-                </div>
-              )}
-              <p className="text-sm text-tc-text-primary">{post.content}</p>
-              <div className="flex items-center gap-4 text-tc-text-hint text-xs">
-                <span>{post.likes_count || 0} curtidas</span>
-                <span>{post.comments_count || 0} comentários</span>
-              </div>
-            </div>
+            <PostCard key={post.id} post={post} />
           ))}
         </div>
       )}
@@ -603,7 +682,7 @@ export default function Community() {
     setLoadingPosts(true);
     const { data, error } = await supabase
       .from("community_posts")
-      .select("*, profiles!community_posts_author_id_fkey(full_name, avatar_url)")
+      .select("*, image_aspect, profiles!community_posts_author_id_fkey(full_name, avatar_url)")
       .order("created_at", { ascending: false })
       .limit(20);
 
