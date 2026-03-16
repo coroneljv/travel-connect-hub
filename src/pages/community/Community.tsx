@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import {
   List,
@@ -17,10 +17,15 @@ import {
   CheckCircle2,
   X,
   Loader2,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import CreatePostModal from "@/components/modals/CreatePostModal";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -65,30 +70,52 @@ const HOST_TYPE_FILTERS = [
 // PostCard — adaptive layout based on image orientation
 // ---------------------------------------------------------------------------
 
-function PostCard({ post }: { post: any }) {
+function PostCard({
+  post,
+  currentUserId,
+  onDelete,
+  onEdit,
+}: {
+  post: any;
+  currentUserId: string | undefined;
+  onDelete: (id: string) => void;
+  onEdit: (post: any) => void;
+}) {
   const [orientation, setOrientation] = useState<"portrait" | "landscape" | "square" | null>(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const isOwner = currentUserId === post.author_id;
 
   const aspect: number | null = post.image_aspect ?? null;
 
   useEffect(() => {
     if (!post.image_url) return;
-    // If we already have aspect stored, use it
     if (aspect) {
-      if (aspect < 0.9) setOrientation("portrait");
-      else if (aspect > 1.1) setOrientation("landscape");
+      if (aspect < 0.85) setOrientation("portrait");
+      else if (aspect > 1.15) setOrientation("landscape");
       else setOrientation("square");
       return;
     }
-    // Otherwise detect from image load
     const img = new window.Image();
     img.onload = () => {
       const r = img.naturalWidth / img.naturalHeight;
-      if (r < 0.9) setOrientation("portrait");
-      else if (r > 1.1) setOrientation("landscape");
+      if (r < 0.85) setOrientation("portrait");
+      else if (r > 1.15) setOrientation("landscape");
       else setOrientation("square");
     };
     img.src = post.image_url;
   }, [post.image_url, aspect]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    if (showMenu) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [showMenu]);
 
   const authorAvatar = post.profiles?.avatar_url ? (
     <img
@@ -103,10 +130,10 @@ function PostCard({ post }: { post: any }) {
     </div>
   );
 
-  const authorInfo = (
+  const headerRow = (
     <div className="flex items-center gap-3">
       {authorAvatar}
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-bold text-tc-text-primary truncate">
           {post.profiles?.full_name || "Usuário"}
         </p>
@@ -117,10 +144,39 @@ function PostCard({ post }: { post: any }) {
           </p>
         )}
       </div>
+      <span className="text-xs text-tc-text-hint whitespace-nowrap">
+        {new Date(post.created_at).toLocaleDateString("pt-BR")}
+      </span>
+      {isOwner && (
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setShowMenu((v) => !v)}
+            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <MoreHorizontal className="h-4 w-4 text-tc-text-hint" />
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
+              <button
+                onClick={() => { setShowMenu(false); onEdit(post); }}
+                className="w-full text-left px-4 py-2 text-sm text-tc-text-primary hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                Editar
+              </button>
+              <button
+                onClick={() => { setShowMenu(false); onDelete(post.id); }}
+                className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                Excluir
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
-
-  const dateStr = new Date(post.created_at).toLocaleDateString("pt-BR");
 
   const footer = (
     <div className="flex items-center gap-4 text-tc-text-hint text-xs">
@@ -129,23 +185,20 @@ function PostCard({ post }: { post: any }) {
     </div>
   );
 
-  // PORTRAIT / VERTICAL — side by side: image left, content right
+  // PORTRAIT / VERTICAL — side by side: image left ~40%, content right
   if (post.image_url && orientation === "portrait") {
     return (
       <div className="bg-white rounded-xl border border-border overflow-hidden flex flex-col sm:flex-row">
-        <div className="sm:w-2/5 shrink-0 bg-gray-100">
+        <div className="sm:w-2/5 shrink-0 bg-gray-100 sm:max-h-[420px] overflow-hidden">
           <img
             src={post.image_url}
             alt=""
-            className="w-full h-full object-cover sm:max-h-[400px]"
+            className="w-full h-full object-cover"
           />
         </div>
         <div className="flex-1 p-5 flex flex-col justify-between gap-3">
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              {authorInfo}
-              <span className="text-xs text-tc-text-hint whitespace-nowrap ml-2">{dateStr}</span>
-            </div>
+            {headerRow}
             <p className="text-sm text-tc-text-primary">{post.content}</p>
           </div>
           {footer}
@@ -155,22 +208,28 @@ function PostCard({ post }: { post: any }) {
   }
 
   // LANDSCAPE / HORIZONTAL / SQUARE — stacked: image on top, content below
+  // Use aspect-ratio container to prevent "zuada" stretching
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden">
       {post.image_url && (
-        <div className="bg-gray-100">
+        <div
+          className="bg-gray-100 overflow-hidden"
+          style={{
+            aspectRatio: orientation === "landscape"
+              ? `${Math.min(aspect ?? 16 / 9, 2)} / 1`
+              : "1 / 1",
+            maxHeight: 420,
+          }}
+        >
           <img
             src={post.image_url}
             alt=""
-            className="w-full max-h-[450px] object-cover"
+            className="w-full h-full object-cover"
           />
         </div>
       )}
       <div className="p-5 space-y-3">
-        <div className="flex items-center justify-between">
-          {authorInfo}
-          <span className="text-xs text-tc-text-hint whitespace-nowrap ml-2">{dateStr}</span>
-        </div>
+        {headerRow}
         <p className="text-sm text-tc-text-primary">{post.content}</p>
         {footer}
       </div>
@@ -186,10 +245,16 @@ function TabFeed({
   onOpenCreatePost,
   posts,
   loadingPosts,
+  currentUserId,
+  onDeletePost,
+  onEditPost,
 }: {
   onOpenCreatePost: () => void;
   posts: any[];
   loadingPosts: boolean;
+  currentUserId: string | undefined;
+  onDeletePost: (id: string) => void;
+  onEditPost: (post: any) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -221,7 +286,13 @@ function TabFeed({
       {posts.length > 0 && (
         <div className="flex flex-col gap-4">
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} />
+            <PostCard
+              key={post.id}
+              post={post}
+              currentUserId={currentUserId}
+              onDelete={onDeletePost}
+              onEdit={onEditPost}
+            />
           ))}
         </div>
       )}
@@ -674,6 +745,12 @@ export default function Community() {
   const [posts, setPosts] = useState<any[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
 
+  // Edit post state
+  const [editingPost, setEditingPost] = useState<any | null>(null);
+  const [editCaption, setEditCaption] = useState("");
+  const [editLocation, setEditLocation] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
   useEffect(() => {
     fetchPosts();
   }, []);
@@ -690,6 +767,49 @@ export default function Community() {
       setPosts(data);
     }
     setLoadingPosts(false);
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir esta publicação?")) return;
+    const { error } = await supabase
+      .from("community_posts")
+      .delete()
+      .eq("id", postId);
+    if (error) {
+      toast.error("Erro ao excluir publicação.");
+    } else {
+      toast.success("Publicação excluída!");
+      setPosts((prev) => prev.filter((p) => p.id !== postId));
+    }
+  };
+
+  const handleEditPost = (post: any) => {
+    setEditingPost(post);
+    setEditCaption(post.content);
+    setEditLocation(post.location || "");
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingPost) return;
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from("community_posts")
+      .update({ content: editCaption, location: editLocation || null })
+      .eq("id", editingPost.id);
+    if (error) {
+      toast.error("Erro ao atualizar publicação.");
+    } else {
+      toast.success("Publicação atualizada!");
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === editingPost.id
+            ? { ...p, content: editCaption, location: editLocation || null }
+            : p
+        )
+      );
+      setEditingPost(null);
+    }
+    setSavingEdit(false);
   };
 
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
@@ -733,7 +853,14 @@ export default function Community() {
 
         {/* Tab content */}
         {activeTab === "feed" && (
-          <TabFeed onOpenCreatePost={() => setShowCreatePost(true)} posts={posts} loadingPosts={loadingPosts} />
+          <TabFeed
+            onOpenCreatePost={() => setShowCreatePost(true)}
+            posts={posts}
+            loadingPosts={loadingPosts}
+            currentUserId={user?.id}
+            onDeletePost={handleDeletePost}
+            onEditPost={handleEditPost}
+          />
         )}
         {activeTab === "viajantes" && <TabViajantes />}
         {activeTab === "anfitrioes" && <TabAnfitrioes />}
@@ -744,6 +871,69 @@ export default function Community() {
         open={showCreatePost}
         onClose={() => { setShowCreatePost(false); fetchPosts(); }}
       />
+
+      {/* Edit Post Modal */}
+      <Dialog open={!!editingPost} onOpenChange={(v) => !v && setEditingPost(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Publicação</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {editingPost?.image_url && (
+              <div className="rounded-lg overflow-hidden bg-gray-100">
+                <img
+                  src={editingPost.image_url}
+                  alt=""
+                  className="w-full max-h-[200px] object-contain mx-auto"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Legenda</label>
+              <textarea
+                value={editCaption}
+                onChange={(e) => {
+                  if (e.target.value.length <= 500) setEditCaption(e.target.value);
+                }}
+                rows={4}
+                className="w-full px-4 py-3 rounded-lg border border-border bg-white text-sm text-tc-text-primary focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500 resize-none"
+              />
+              <p className="text-xs text-tc-text-hint text-right">
+                {editCaption.length}/500 caracteres
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-tc-text-hint" />
+                Localização
+              </label>
+              <input
+                type="text"
+                value={editLocation}
+                onChange={(e) => setEditLocation(e.target.value)}
+                placeholder="Localização..."
+                className="w-full px-4 py-2.5 rounded-lg border border-border bg-white text-sm text-tc-text-primary focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setEditingPost(null)}
+                className="py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={savingEdit || !editCaption.trim()}
+                className="py-2.5 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {savingEdit && <Loader2 className="h-4 w-4 animate-spin" />}
+                Salvar
+              </button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
