@@ -17,6 +17,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -58,6 +60,7 @@ function StarsRow({
 export default function TravelerProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [activeTab, setActiveTab] = useState<TabKey>("sobre");
   const [isFollowing, setIsFollowing] = useState(false);
@@ -81,7 +84,35 @@ export default function TravelerProfile() {
       setLoading(false);
     };
     fetchProfile();
+    checkIfFollowing();
   }, [id]);
+
+  const checkIfFollowing = async () => {
+    if (!user || !id) return;
+    const { data } = await (supabase.from("user_follows" as any) as any)
+      .select("id")
+      .eq("follower_id", user.id)
+      .eq("following_id", id)
+      .maybeSingle();
+    if (data) setIsFollowing(true);
+  };
+
+  const handleFollow = async () => {
+    if (!user || !id) return;
+    if (isFollowing) {
+      await (supabase.from("user_follows" as any) as any)
+        .delete()
+        .eq("follower_id", user.id)
+        .eq("following_id", id);
+      setIsFollowing(false);
+      toast.success("Deixou de seguir");
+    } else {
+      await (supabase.from("user_follows" as any) as any)
+        .insert({ follower_id: user.id, following_id: id });
+      setIsFollowing(true);
+      toast.success("Seguindo!");
+    }
+  };
 
   const tabs: { key: TabKey; label: string }[] = [
     { key: "sobre", label: "Sobre" },
@@ -141,7 +172,17 @@ export default function TravelerProfile() {
         <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
           Idiomas
         </h3>
-        <p className="text-sm text-tc-text-hint">Nenhum dado cadastrado</p>
+        {profile.languages?.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {profile.languages.map((lang: string) => (
+              <span key={lang} className="px-3 py-1.5 rounded-full text-xs font-medium bg-rose-50 text-rose-600 border border-rose-100">
+                {lang}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-tc-text-hint">Nenhum dado cadastrado</p>
+        )}
       </div>
 
       {/* Habilidades */}
@@ -149,16 +190,60 @@ export default function TravelerProfile() {
         <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
           Habilidades
         </h3>
-        <p className="text-sm text-tc-text-hint">Nenhum dado cadastrado</p>
+        {profile.skills?.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {profile.skills.map((skill: string) => (
+              <span key={skill} className="px-3 py-1.5 rounded-full text-xs font-medium bg-navy-50 text-navy-600 border border-navy-100">
+                {skill}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-tc-text-hint">Nenhum dado cadastrado</p>
+        )}
       </div>
 
-      {/* Interesses */}
+      {/* Regiões de Interesse */}
       <div className="border border-border rounded-xl p-6 bg-white">
         <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
-          Interesses
+          Regiões de Interesse
         </h3>
-        <p className="text-sm text-tc-text-hint">Nenhum dado cadastrado</p>
+        {profile.regions?.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {profile.regions.map((region: string) => (
+              <span key={region} className="px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-600 border border-emerald-100">
+                {region}
+              </span>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-tc-text-hint">Nenhum dado cadastrado</p>
+        )}
       </div>
+
+      {/* Duração Preferida */}
+      {profile.preferred_duration && (
+        <div className="border border-border rounded-xl p-6 bg-white">
+          <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
+            Duração Preferida
+          </h3>
+          <span className="px-3 py-1.5 rounded-full text-xs font-medium bg-amber-50 text-amber-600 border border-amber-100">
+            {profile.preferred_duration}
+          </span>
+        </div>
+      )}
+
+      {/* Preferências Adicionais */}
+      {profile.additional_preferences && (
+        <div className="border border-border rounded-xl p-6 bg-white">
+          <h3 className="text-sm font-semibold text-tc-text-primary mb-3">
+            Preferências Adicionais
+          </h3>
+          <p className="text-sm text-tc-text-secondary leading-relaxed">
+            {profile.additional_preferences}
+          </p>
+        </div>
+      )}
     </div>
   );
 
@@ -307,6 +392,17 @@ export default function TravelerProfile() {
           <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
+              onClick={async () => {
+                const url = window.location.href;
+                if (navigator.share) {
+                  try {
+                    await navigator.share({ title: profile.full_name, url });
+                  } catch { /* cancelled */ }
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  toast.success("Link do perfil copiado!");
+                }
+              }}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-border text-tc-text-secondary hover:bg-gray-50 transition-colors"
               title="Compartilhar"
             >
@@ -314,6 +410,7 @@ export default function TravelerProfile() {
             </button>
             <button
               type="button"
+              onClick={() => navigate(`/chat?user=${id}`)}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-border text-tc-text-secondary hover:bg-gray-50 transition-colors"
               title="Mensagem"
             >
@@ -326,7 +423,7 @@ export default function TravelerProfile() {
         <div className="mt-3">
           <button
             type="button"
-            onClick={() => setIsFollowing(!isFollowing)}
+            onClick={handleFollow}
             className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               isFollowing
                 ? "bg-navy-500 text-white hover:bg-navy-600"
@@ -368,7 +465,7 @@ export default function TravelerProfile() {
             <div className="flex items-center gap-1">
               <Languages className="h-4 w-4 text-rose-500" />
               <span className="text-lg font-bold text-tc-text-primary">
-                --
+                {profile.languages?.length || 0}
               </span>
             </div>
             <span className="text-xs text-tc-text-hint">Idiomas</span>

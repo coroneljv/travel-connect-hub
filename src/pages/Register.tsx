@@ -230,7 +230,7 @@ const Register = () => {
 
   // Viajante: Viagens (step 4)
   const [selectedRegions, setSelectedRegions] = useState<string[]>([]);
-  const [selectedDurations, setSelectedDurations] = useState<string[]>([]);
+  const [selectedDuration, setSelectedDuration] = useState("");
   const [additionalPreferences, setAdditionalPreferences] = useState("");
 
   // Anfitriao: Organizacao (step 0)
@@ -369,7 +369,7 @@ const Register = () => {
           languages: selectedLanguages.length ? selectedLanguages : undefined,
           skills: selectedSkills.length ? selectedSkills : undefined,
           regions: selectedRegions.length ? selectedRegions : undefined,
-          preferredDuration: selectedDurations.join(", ") || undefined,
+          preferredDuration: selectedDuration || undefined,
           additionalPreferences: additionalPreferences || undefined,
         });
         toast.success("Cadastro finalizado com sucesso!");
@@ -691,16 +691,16 @@ const Register = () => {
 
       <div>
         <Label className="text-base font-semibold mb-3 block">Duração Preferida</Label>
-        <div className="flex flex-wrap gap-2">
+        <select
+          value={selectedDuration}
+          onChange={(e) => setSelectedDuration(e.target.value)}
+          className="w-full px-4 py-3 rounded-lg border border-border bg-white text-sm text-tc-text-primary focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500"
+        >
+          <option value="">Selecione...</option>
           {DURATIONS.map((dur) => (
-            <Chip
-              key={dur}
-              label={dur}
-              selected={selectedDurations.includes(dur)}
-              onClick={() => setSelectedDurations(toggleChip(selectedDurations, dur))}
-            />
+            <option key={dur} value={dur}>{dur}</option>
           ))}
-        </div>
+        </select>
       </div>
 
       <div className="space-y-2">

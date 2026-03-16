@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   List,
   Globe,
@@ -82,8 +82,50 @@ function PostCard({
   onEdit: (post: any) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(post.likes_count || 0);
   const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const isOwner = currentUserId === post.author_id;
+
+  // Check if current user already liked this post
+  useEffect(() => {
+    if (!currentUserId) return;
+    supabase
+      .from("post_likes")
+      .select("id")
+      .eq("post_id", post.id)
+      .eq("user_id", currentUserId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) setLiked(true);
+      });
+  }, [currentUserId, post.id]);
+
+  const handleLike = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!currentUserId) return;
+
+    if (liked) {
+      const { error } = await supabase
+        .from("post_likes")
+        .delete()
+        .eq("post_id", post.id)
+        .eq("user_id", currentUserId);
+      if (!error) {
+        setLiked(false);
+        setLikesCount((c: number) => Math.max(0, c - 1));
+      }
+    } else {
+      const { error } = await supabase
+        .from("post_likes")
+        .insert({ post_id: post.id, user_id: currentUserId });
+      if (!error) {
+        setLiked(true);
+        setLikesCount((c: number) => c + 1);
+      }
+    }
+  };
 
   // Close menu on outside click
   useEffect(() => {
@@ -101,85 +143,142 @@ function PostCard({
       src={post.profiles.avatar_url}
       alt=""
       referrerPolicy="no-referrer"
-      className="w-10 h-10 rounded-full object-cover shrink-0"
+      className="w-[49px] h-[49px] rounded-full object-cover shrink-0"
     />
   ) : (
-    <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm shrink-0">
+    <div className="w-[49px] h-[49px] rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-base shrink-0">
       {post.profiles?.full_name?.[0]?.toUpperCase() || "?"}
     </div>
   );
 
-  const headerRow = (
-    <div className="flex items-center gap-3">
-      {authorAvatar}
-      <div className="min-w-0 flex-1">
-        <p className="text-sm font-bold text-tc-text-primary truncate">
-          {post.profiles?.full_name || "Usuário"}
-        </p>
-        {post.location && (
-          <p className="text-xs text-tc-text-hint flex items-center gap-1">
-            <MapPin className="h-3 w-3 shrink-0" />
-            {post.location}
-          </p>
-        )}
-      </div>
-      <span className="text-xs text-tc-text-hint whitespace-nowrap">
-        {new Date(post.created_at).toLocaleDateString("pt-BR")}
-      </span>
-      {isOwner && (
-        <div className="relative" ref={menuRef}>
-          <button
-            onClick={() => setShowMenu((v) => !v)}
-            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <MoreHorizontal className="h-4 w-4 text-tc-text-hint" />
-          </button>
-          {showMenu && (
-            <div className="absolute right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
-              <button
-                onClick={() => { setShowMenu(false); onEdit(post); }}
-                className="w-full text-left px-4 py-2 text-sm text-tc-text-primary hover:bg-gray-50 flex items-center gap-2"
+  // Determine role badge (mock — in future, fetch from user_roles)
+  // For now we don't have role data on posts, so we skip the badge
+  // unless we add it to the query later
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("a")) return;
+    navigate(`/community/post/${post.id}`);
+  };
+
+  return (
+    <div
+      className="bg-white border border-border rounded-[10px] overflow-hidden cursor-pointer hover:shadow-sm transition-shadow"
+      onClick={handleCardClick}
+    >
+      {/* Header + Text section */}
+      <div className="border-b border-gray-200 p-4 space-y-4">
+        {/* Author row */}
+        <div className="flex items-center gap-3">
+          {authorAvatar}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2.5">
+              <Link
+                to={`/community/travelers/${post.author_id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="text-sm font-medium text-[#1e2939] whitespace-nowrap hover:underline"
               >
-                <Pencil className="h-3.5 w-3.5" />
-                Editar
-              </button>
+                {post.profiles?.full_name || "Usuário"}
+              </Link>
+              {/* Role badge placeholder — could be enhanced with real role data */}
+            </div>
+            {post.location && (
+              <p className="text-[10px] text-[#6a7282] flex items-center gap-1 mt-1">
+                <MapPin className="h-3 w-3 shrink-0" />
+                {post.location}
+              </p>
+            )}
+            <p className="text-[10px] text-[#6a7282] mt-0.5">
+              {new Date(post.created_at).toLocaleDateString("pt-BR", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+          </div>
+          {isOwner && (
+            <div className="relative shrink-0" ref={menuRef}>
               <button
-                onClick={() => { setShowMenu(false); onDelete(post.id); }}
-                className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                onClick={(e) => { e.stopPropagation(); setShowMenu((v) => !v); }}
+                className="p-1 rounded-full hover:bg-gray-100 transition-colors"
               >
-                <Trash2 className="h-3.5 w-3.5" />
-                Excluir
+                <MoreHorizontal className="h-4 w-4 text-[#6a7282]" />
               </button>
+              {showMenu && (
+                <div className="absolute right-0 top-full mt-1 bg-white border border-border rounded-lg shadow-lg py-1 z-50 min-w-[140px]">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); onEdit(post); }}
+                    className="w-full text-left px-4 py-2 text-sm text-[#1e2939] hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete(post.id); }}
+                    className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Excluir
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
-    </div>
-  );
 
-  const footer = (
-    <div className="flex items-center gap-4 text-tc-text-hint text-xs">
-      <span>{post.likes_count || 0} curtidas</span>
-      <span>{post.comments_count || 0} comentários</span>
-    </div>
-  );
+        {/* Post text */}
+        {post.content && (
+          <p className="text-base text-[#364153] leading-normal whitespace-pre-line">
+            {post.content}
+          </p>
+        )}
+      </div>
 
-  // Always stacked: image full width on top, content below
-  return (
-    <div className="bg-white rounded-xl border border-border overflow-hidden">
+      {/* Image — full width, fixed height, object-cover (Figma: ~384px) */}
       {post.image_url && (
-        <div className="bg-gray-50 flex items-center justify-center overflow-hidden" style={{ maxHeight: 500 }}>
+        <div className="w-full h-[384px]">
           <img
             src={post.image_url}
             alt=""
-            className="w-full h-auto max-h-[500px] object-contain"
+            className="w-full h-full object-cover"
           />
         </div>
       )}
-      <div className="p-5 space-y-3">
-        {headerRow}
-        <p className="text-sm text-tc-text-primary">{post.content}</p>
-        {footer}
+
+      {/* Hashtags row */}
+      {post.tags && post.tags.length > 0 && (
+        <div className="flex items-center gap-4 px-4 py-2.5 text-sm text-[#155dfc]">
+          {post.tags.map((tag: string, i: number) => (
+            <span key={i}>#{tag}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Footer — likes, comments, share */}
+      <div className="border-t border-gray-200 flex items-center justify-between px-4 h-[57px]">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleLike}
+            className={`flex items-center gap-2 transition-colors ${liked ? "text-rose-500" : "text-[#4a5565] hover:text-rose-500"}`}
+          >
+            <Heart className={`h-[18px] w-[18px] ${liked ? "fill-rose-500" : ""}`} />
+            <span className="text-base">{likesCount}</span>
+          </button>
+          <button
+            onClick={(e) => e.stopPropagation()}
+            className="flex items-center gap-2 text-[#4a5565] hover:text-navy-500 transition-colors"
+          >
+            <MessageCircle className="h-[18px] w-[18px]" />
+            <span className="text-base">{post.comments_count || 0}</span>
+          </button>
+        </div>
+        <button
+          onClick={(e) => e.stopPropagation()}
+          className="text-[#4a5565] hover:text-navy-500 transition-colors"
+        >
+          <Share2 className="h-5 w-5" />
+        </button>
       </div>
     </div>
   );
@@ -196,6 +295,7 @@ function TabFeed({
   currentUserId,
   onDeletePost,
   onEditPost,
+  followingCount,
 }: {
   onOpenCreatePost: () => void;
   posts: any[];
@@ -203,6 +303,7 @@ function TabFeed({
   currentUserId: string | undefined;
   onDeletePost: (id: string) => void;
   onEditPost: (post: any) => void;
+  followingCount: number;
 }) {
   return (
     <div className="space-y-6">
@@ -217,9 +318,9 @@ function TabFeed({
             todo o mundo!
           </p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-rose-500 text-sm font-medium hover:bg-rose-50 transition-colors">
+        <button className="flex items-center gap-4 px-4 py-3 rounded-[10px] bg-navy-500/10 text-navy-500 text-sm hover:bg-navy-500/20 transition-colors">
           <Heart className="h-4 w-4" />
-          Seguindo (0)
+          Seguindo ({followingCount})
         </button>
       </div>
 
@@ -254,7 +355,7 @@ function TabFeed({
       {/* FAB */}
       <button
         onClick={onOpenCreatePost}
-        className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-rose-500 text-white shadow-lg flex items-center justify-center hover:bg-rose-600 transition-colors z-50"
+        className="fixed bottom-8 right-8 w-[60px] h-[60px] rounded-full bg-navy-500 text-white shadow-[0_4px_4px_rgba(0,0,0,0.25)] flex items-center justify-center hover:bg-navy-600 transition-colors z-50"
       >
         <Plus className="h-6 w-6" />
       </button>
@@ -429,6 +530,7 @@ function TabViajantes() {
                     <img
                       src={traveler.avatar}
                       alt={traveler.name}
+                      referrerPolicy="no-referrer"
                       className="w-full h-full object-cover"
                     />
                   ) : (
@@ -478,9 +580,26 @@ function TabAnfitrioes() {
   useEffect(() => {
     const fetchHosts = async () => {
       setLoading(true);
+      // Get org IDs that belong to actual hosts (buyer role)
+      const { data: buyerProfiles } = await supabase
+        .from("user_roles")
+        .select("user_id, profiles!inner(organization_id)")
+        .eq("role", "buyer");
+
+      const hostOrgIds = (buyerProfiles || [])
+        .map((r: any) => r.profiles?.organization_id)
+        .filter(Boolean);
+
+      if (hostOrgIds.length === 0) {
+        setHosts([]);
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("organizations")
         .select("id, name, city, state, description, logo_url")
+        .in("id", hostOrgIds)
         .is("deleted_at", null);
 
       if (!error && data) {
@@ -630,6 +749,7 @@ function TabAnfitrioes() {
                   <img
                     src={host.logo_url}
                     alt={host.name}
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -698,23 +818,38 @@ export default function Community() {
   const [editCaption, setEditCaption] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+  const [followingCount, setFollowingCount] = useState(0);
 
   useEffect(() => {
     fetchPosts();
+    fetchFollowingCount();
   }, []);
 
   const fetchPosts = async () => {
     setLoadingPosts(true);
     const { data, error } = await supabase
       .from("community_posts")
-      .select("*, image_aspect, profiles!community_posts_author_id_fkey(full_name, avatar_url)")
+      .select("*, image_aspect, profiles!community_posts_author_id_fkey(full_name, avatar_url), post_likes(count), post_comments(count)")
       .order("created_at", { ascending: false })
       .limit(20);
 
     if (!error && data) {
-      setPosts(data);
+      const enriched = data.map((p: any) => ({
+        ...p,
+        likes_count: p.post_likes?.[0]?.count ?? p.likes_count ?? 0,
+        comments_count: p.post_comments?.[0]?.count ?? p.comments_count ?? 0,
+      }));
+      setPosts(enriched);
     }
     setLoadingPosts(false);
+  };
+
+  const fetchFollowingCount = async () => {
+    if (!user) return;
+    const { count } = await (supabase.from("user_follows" as any) as any)
+      .select("*", { count: "exact", head: true })
+      .eq("follower_id", user.id);
+    setFollowingCount(count || 0);
   };
 
   const handleDeletePost = async (postId: string) => {
@@ -807,6 +942,7 @@ export default function Community() {
             loadingPosts={loadingPosts}
             currentUserId={user?.id}
             onDeletePost={handleDeletePost}
+            followingCount={followingCount}
             onEditPost={handleEditPost}
           />
         )}

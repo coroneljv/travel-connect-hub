@@ -37,6 +37,7 @@ const CreateCourse = lazy(() => import("./pages/academy/CreateCourse"));
 const Community = lazy(() => import("./pages/community/Community"));
 const TravelerProfile = lazy(() => import("./pages/community/TravelerProfile"));
 const HostProfile = lazy(() => import("./pages/community/HostProfile"));
+const PostDetail = lazy(() => import("./pages/community/PostDetail"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Notifications = lazy(() => import("./pages/Notifications"));
 
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="/community" element={<Suspense fallback={null}><Community /></Suspense>} />
               <Route path="/community/travelers/:id" element={<Suspense fallback={null}><TravelerProfile /></Suspense>} />
               <Route path="/community/hosts/:id" element={<Suspense fallback={null}><HostProfile /></Suspense>} />
+              <Route path="/community/post/:postId" element={<Suspense fallback={null}><PostDetail /></Suspense>} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/requests" element={<Navigate to="/dashboard" replace />} />
               <Route path="/chat" element={<Suspense fallback={null}><ChatLayout /></Suspense>} />
