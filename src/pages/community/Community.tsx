@@ -81,30 +81,9 @@ function PostCard({
   onDelete: (id: string) => void;
   onEdit: (post: any) => void;
 }) {
-  const [orientation, setOrientation] = useState<"portrait" | "landscape" | "square" | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const isOwner = currentUserId === post.author_id;
-
-  const aspect: number | null = post.image_aspect ?? null;
-
-  useEffect(() => {
-    if (!post.image_url) return;
-    if (aspect) {
-      if (aspect < 0.85) setOrientation("portrait");
-      else if (aspect > 1.15) setOrientation("landscape");
-      else setOrientation("square");
-      return;
-    }
-    const img = new window.Image();
-    img.onload = () => {
-      const r = img.naturalWidth / img.naturalHeight;
-      if (r < 0.85) setOrientation("portrait");
-      else if (r > 1.15) setOrientation("landscape");
-      else setOrientation("square");
-    };
-    img.src = post.image_url;
-  }, [post.image_url, aspect]);
 
   // Close menu on outside click
   useEffect(() => {
@@ -185,46 +164,15 @@ function PostCard({
     </div>
   );
 
-  // PORTRAIT / VERTICAL — side by side: image left ~40%, content right
-  if (post.image_url && orientation === "portrait") {
-    return (
-      <div className="bg-white rounded-xl border border-border overflow-hidden flex flex-col sm:flex-row">
-        <div className="sm:w-2/5 shrink-0 bg-gray-100 sm:max-h-[420px] overflow-hidden">
-          <img
-            src={post.image_url}
-            alt=""
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div className="flex-1 p-5 flex flex-col justify-between gap-3">
-          <div className="space-y-3">
-            {headerRow}
-            <p className="text-sm text-tc-text-primary">{post.content}</p>
-          </div>
-          {footer}
-        </div>
-      </div>
-    );
-  }
-
-  // LANDSCAPE / HORIZONTAL / SQUARE — stacked: image on top, content below
-  // Use aspect-ratio container to prevent "zuada" stretching
+  // Always stacked: image full width on top, content below
   return (
     <div className="bg-white rounded-xl border border-border overflow-hidden">
       {post.image_url && (
-        <div
-          className="bg-gray-100 overflow-hidden"
-          style={{
-            aspectRatio: orientation === "landscape"
-              ? `${Math.min(aspect ?? 16 / 9, 2)} / 1`
-              : "1 / 1",
-            maxHeight: 420,
-          }}
-        >
+        <div className="bg-gray-50 flex items-center justify-center overflow-hidden" style={{ maxHeight: 500 }}>
           <img
             src={post.image_url}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-auto max-h-[500px] object-contain"
           />
         </div>
       )}
