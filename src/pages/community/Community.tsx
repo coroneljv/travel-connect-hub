@@ -106,9 +106,18 @@ function TabFeed({
           {posts.map((post) => (
             <div key={post.id} className="bg-white rounded-xl border border-border p-5 space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm">
-                  {post.profiles?.full_name?.[0]?.toUpperCase() || "?"}
-                </div>
+                {post.profiles?.avatar_url ? (
+                  <img
+                    src={post.profiles.avatar_url}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    className="w-10 h-10 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 font-bold text-sm">
+                    {post.profiles?.full_name?.[0]?.toUpperCase() || "?"}
+                  </div>
+                )}
                 <div>
                   <p className="text-sm font-bold text-tc-text-primary">{post.profiles?.full_name || "Usuário"}</p>
                   {post.location && (
@@ -120,7 +129,13 @@ function TabFeed({
                 </span>
               </div>
               {post.image_url && (
-                <img src={post.image_url} alt="" className="w-full rounded-lg object-cover max-h-[300px]" />
+                <div className="rounded-lg overflow-hidden bg-gray-100">
+                  <img
+                    src={post.image_url}
+                    alt=""
+                    className="w-full max-h-[500px] object-contain mx-auto"
+                  />
+                </div>
               )}
               <p className="text-sm text-tc-text-primary">{post.content}</p>
               <div className="flex items-center gap-4 text-tc-text-hint text-xs">
