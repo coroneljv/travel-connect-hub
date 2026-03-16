@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Image,
   MapPin,
@@ -7,8 +7,6 @@ import {
   X,
   Crop,
   RotateCw,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import {
   Dialog,
@@ -40,15 +38,12 @@ const POPULAR_LOCATIONS = [
   "Santiago, Chile",
   "Lima, Peru",
   "Bogotá, Colômbia",
-  "Cidade do México, México",
-  "Cancún, México",
   "Paris, França",
   "Londres, Reino Unido",
   "Barcelona, Espanha",
   "Lisboa, Portugal",
   "Roma, Itália",
   "Berlim, Alemanha",
-  "Amsterdã, Holanda",
   "Nova York, EUA",
   "Miami, EUA",
   "Tóquio, Japão",
@@ -59,56 +54,95 @@ const POPULAR_LOCATIONS = [
 ];
 
 // ---------------------------------------------------------------------------
-// Aspect ratio presets
+// Aspect presets — viewport will use these ratios
 // ---------------------------------------------------------------------------
 
 type AspectPreset = { label: string; ratio: number | null };
 const ASPECT_PRESETS: AspectPreset[] = [
   { label: "Original", ratio: null },
   { label: "1:1", ratio: 1 },
-  { label: "4:3", ratio: 4 / 3 },
+  { label: "4:5", ratio: 4 / 5 },
   { label: "3:4", ratio: 3 / 4 },
   { label: "16:9", ratio: 16 / 9 },
 ];
 
 // ---------------------------------------------------------------------------
-// Canvas crop helper
+// Canvas-based crop: renders the visible portion of the viewport
 // ---------------------------------------------------------------------------
 
-function cropImageToCanvas(
-  img: HTMLImageElement,
-  cropArea: { x: number; y: number; w: number; h: number },
+function renderCrop(
+  imgSrc: string,
+  _imgNatural: { w: number; h: number },
+  viewportRatio: number, // w/h of the viewport
+  offsetPct: { x: number; y: number }, // 0..1 pan offset
   rotation: number
-): Promise<Blob> {
+): Promise<{ blob: Blob; aspect: number }> {
   return new Promise((resolve, reject) => {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return reject(new Error("Canvas not supported"));
+    const img = new window.Image();
+    img.onload = () => {
+      const nw = img.naturalWidth;
+      const nh = img.naturalHeight;
+      const imgRatio = nw / nh;
 
-    const sw = cropArea.w * img.naturalWidth;
-    const sh = cropArea.h * img.naturalHeight;
-    const sx = cropArea.x * img.naturalWidth;
-    const sy = cropArea.y * img.naturalHeight;
+      let sx: number, sy: number, sw: number, sh: number;
 
-    // Max output 1920px
-    const scale = Math.min(1, 1920 / Math.max(sw, sh));
-    canvas.width = Math.round(sw * scale);
-    canvas.height = Math.round(sh * scale);
+      if (viewportRatio > imgRatio) {
+        // Image taller than viewport — crop top/bottom
+        sw = nw;
+        sh = nw / viewportRatio;
+        sx = 0;
+        const maxOffset = nh - sh;
+        sy = maxOffset * offsetPct.y;
+      } else {
+        // Image wider than viewport — crop left/right
+        sh = nh;
+        sw = nh * viewportRatio;
+        sy = 0;
+        const maxOffset = nw - sw;
+        sx = maxOffset * offsetPct.x;
+      }
 
-    ctx.save();
-    if (rotation) {
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      ctx.rotate((rotation * Math.PI) / 180);
-      ctx.translate(-canvas.width / 2, -canvas.height / 2);
-    }
-    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
-    ctx.restore();
+      const scale = Math.min(1, 1920 / Math.max(sw, sh));
+      const canvas = document.createElement("canvas");
 
-    canvas.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error("Blob failed"))),
-      "image/jpeg",
-      0.9
-    );
+      if (rotation === 90 || rotation === 270) {
+        canvas.width = Math.round(sh * scale);
+        canvas.height = Math.round(sw * scale);
+      } else {
+        canvas.width = Math.round(sw * scale);
+        canvas.height = Math.round(sh * scale);
+      }
+
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return reject(new Error("No canvas"));
+
+      ctx.save();
+      if (rotation) {
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.rotate((rotation * Math.PI) / 180);
+        if (rotation === 90 || rotation === 270) {
+          ctx.translate(-canvas.height / 2, -canvas.width / 2);
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, Math.round(sh * scale), Math.round(sw * scale));
+        } else {
+          ctx.translate(-canvas.width / 2, -canvas.height / 2);
+          ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        }
+      } else {
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+      }
+      ctx.restore();
+
+      canvas.toBlob(
+        (blob) =>
+          blob
+            ? resolve({ blob, aspect: canvas.width / canvas.height })
+            : reject(new Error("Blob failed")),
+        "image/jpeg",
+        0.92
+      );
+    };
+    img.onerror = () => reject(new Error("Image load failed"));
+    img.src = imgSrc;
   });
 }
 
@@ -122,7 +156,189 @@ interface CreatePostModalProps {
 }
 
 // ---------------------------------------------------------------------------
-// Component
+// ImageEditor — Instagram-style crop
+// ---------------------------------------------------------------------------
+
+function ImageEditor({
+  src,
+  imgNatural,
+  onApply,
+  onCancel,
+}: {
+  src: string;
+  imgNatural: { w: number; h: number };
+  onApply: (blob: Blob, aspect: number) => void;
+  onCancel: () => void;
+}) {
+  const [selectedAspect, setSelectedAspect] = useState<AspectPreset>(
+    ASPECT_PRESETS[0]
+  );
+  const [rotation, setRotation] = useState(0);
+  const [offsetPct, setOffsetPct] = useState({ x: 0.5, y: 0.5 });
+  const [applying, setApplying] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const dragging = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+
+  const imgRatio = imgNatural.w / imgNatural.h;
+  const viewportRatio = selectedAspect.ratio ?? imgRatio;
+
+  // Reset offset when aspect changes
+  useEffect(() => {
+    setOffsetPct({ x: 0.5, y: 0.5 });
+  }, [selectedAspect]);
+
+  // Determine which axis can be panned
+  const canPanX = viewportRatio < imgRatio;
+  const canPanY = viewportRatio > imgRatio;
+
+  // Mouse/touch drag handlers
+  const handlePointerDown = (e: React.PointerEvent) => {
+    dragging.current = true;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!dragging.current || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const dx = e.clientX - lastPos.current.x;
+    const dy = e.clientY - lastPos.current.y;
+    lastPos.current = { x: e.clientX, y: e.clientY };
+
+    setOffsetPct((prev) => ({
+      x: canPanX
+        ? Math.max(0, Math.min(1, prev.x - dx / rect.width))
+        : prev.x,
+      y: canPanY
+        ? Math.max(0, Math.min(1, prev.y - dy / rect.height))
+        : prev.y,
+    }));
+  };
+
+  const handlePointerUp = () => {
+    dragging.current = false;
+  };
+
+  // Calculate CSS object-position for the preview
+  const objectPosition = `${offsetPct.x * 100}% ${offsetPct.y * 100}%`;
+
+  // Viewport container aspect ratio via padding-bottom trick
+  const viewportPaddingBottom = `${(1 / viewportRatio) * 100}%`;
+
+  const handleApply = async () => {
+    setApplying(true);
+    try {
+      const { blob, aspect } = await renderCrop(
+        src,
+        imgNatural,
+        viewportRatio,
+        offsetPct,
+        rotation
+      );
+      onApply(blob, aspect);
+    } catch {
+      toast.error("Erro ao processar imagem.");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Aspect presets */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {ASPECT_PRESETS.map((preset) => (
+          <button
+            key={preset.label}
+            type="button"
+            onClick={() => setSelectedAspect(preset)}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              selectedAspect.label === preset.label
+                ? "bg-rose-500 text-white"
+                : "bg-white border border-gray-300 text-tc-text-primary hover:border-gray-400"
+            }`}
+          >
+            {preset.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Viewport — shows image cropped to selected ratio */}
+      <div
+        ref={containerRef}
+        className="relative rounded-lg overflow-hidden bg-gray-900 cursor-grab active:cursor-grabbing select-none"
+        style={{ paddingBottom: viewportPaddingBottom }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        <img
+          src={src}
+          alt=""
+          draggable={false}
+          className="absolute inset-0 w-full h-full"
+          style={{
+            objectFit: "cover",
+            objectPosition,
+            transform: `rotate(${rotation}deg)`,
+          }}
+        />
+        {/* Rule of thirds grid */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute left-1/3 top-0 bottom-0 w-px bg-white/25" />
+          <div className="absolute left-2/3 top-0 bottom-0 w-px bg-white/25" />
+          <div className="absolute top-1/3 left-0 right-0 h-px bg-white/25" />
+          <div className="absolute top-2/3 left-0 right-0 h-px bg-white/25" />
+        </div>
+        {/* Drag hint */}
+        {(canPanX || canPanY) && (
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-black/50 text-white text-[10px] px-2 py-0.5 rounded-full pointer-events-none">
+            Arraste para ajustar
+          </div>
+        )}
+      </div>
+
+      {/* Controls */}
+      <div className="flex items-center justify-between">
+        <button
+          type="button"
+          onClick={() => setRotation((r) => (r + 90) % 360)}
+          className="p-2 rounded-lg border border-border hover:bg-gray-50 transition-colors"
+          title="Girar 90°"
+        >
+          <RotateCw className="h-4 w-4" />
+        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={handleApply}
+            disabled={applying}
+            className="px-4 py-2 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {applying ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Crop className="h-4 w-4" />
+            )}
+            Aplicar
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Main component
 // ---------------------------------------------------------------------------
 
 export default function CreatePostModal({
@@ -132,20 +348,13 @@ export default function CreatePostModal({
   const { user, profile } = useAuth();
   const [caption, setCaption] = useState("");
   const [location, setLocation] = useState("");
-  const [originalFile, setOriginalFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Image editing
-  const [editing, setEditing] = useState(false);
-  const [selectedAspect, setSelectedAspect] = useState<AspectPreset>(ASPECT_PRESETS[0]);
-  const [rotation, setRotation] = useState(0);
-  const [zoom, setZoom] = useState(1);
+  const [photoSrc, setPhotoSrc] = useState<string | null>(null);
   const [imgNatural, setImgNatural] = useState({ w: 1, h: 1 });
-  const [cropArea, setCropArea] = useState({ x: 0, y: 0, w: 1, h: 1 });
   const [croppedPreview, setCroppedPreview] = useState<string | null>(null);
   const [finalBlob, setFinalBlob] = useState<Blob | null>(null);
-  const imgRef = useRef<HTMLImageElement>(null);
+  const [finalAspect, setFinalAspect] = useState<number | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   // Location suggestions
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -154,39 +363,16 @@ export default function CreatePostModal({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (locationRef.current && !locationRef.current.contains(e.target as Node)) {
+      if (
+        locationRef.current &&
+        !locationRef.current.contains(e.target as Node)
+      ) {
         setShowSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  // Recalculate crop area when aspect changes
-  const recalcCrop = useCallback(
-    (ratio: number | null, natW: number, natH: number) => {
-      if (!ratio) {
-        setCropArea({ x: 0, y: 0, w: 1, h: 1 });
-        return;
-      }
-      const imgRatio = natW / natH;
-      let w = 1,
-        h = 1;
-      if (ratio > imgRatio) {
-        // crop height
-        w = 1;
-        h = imgRatio / ratio;
-      } else {
-        // crop width
-        h = 1;
-        w = (ratio / imgRatio);
-      }
-      const x = (1 - w) / 2;
-      const y = (1 - h) / 2;
-      setCropArea({ x, y, w, h });
-    },
-    []
-  );
 
   const handleLocationChange = (value: string) => {
     setLocation(value);
@@ -209,21 +395,16 @@ export default function CreatePostModal({
       toast.error("Arquivo muito grande. Máximo 10 MB.");
       return;
     }
-    setOriginalFile(file);
     setFinalBlob(null);
     setCroppedPreview(null);
-    setSelectedAspect(ASPECT_PRESETS[0]);
-    setRotation(0);
-    setZoom(1);
+    setFinalAspect(null);
     const reader = new FileReader();
     reader.onload = (ev) => {
       const url = ev.target?.result as string;
-      setPhotoPreview(url);
-      // detect natural dimensions
+      setPhotoSrc(url);
       const img = new window.Image();
       img.onload = () => {
         setImgNatural({ w: img.naturalWidth, h: img.naturalHeight });
-        recalcCrop(null, img.naturalWidth, img.naturalHeight);
         setEditing(true);
       };
       img.src = url;
@@ -231,20 +412,11 @@ export default function CreatePostModal({
     reader.readAsDataURL(file);
   };
 
-  const handleApplyCrop = async () => {
-    if (!photoPreview) return;
-    const img = new window.Image();
-    img.onload = async () => {
-      try {
-        const blob = await cropImageToCanvas(img, cropArea, rotation);
-        setFinalBlob(blob);
-        setCroppedPreview(URL.createObjectURL(blob));
-        setEditing(false);
-      } catch {
-        toast.error("Erro ao processar imagem.");
-      }
-    };
-    img.src = photoPreview;
+  const handleApplyCrop = (blob: Blob, aspect: number) => {
+    setFinalBlob(blob);
+    setCroppedPreview(URL.createObjectURL(blob));
+    setFinalAspect(aspect);
+    setEditing(false);
   };
 
   const handleSubmit = async () => {
@@ -257,31 +429,37 @@ export default function CreatePostModal({
     setIsSubmitting(true);
     try {
       let imageUrl: string | null = null;
-      let imageAspect: number | null = null;
 
-      if (finalBlob || originalFile) {
-        const fileToUpload = finalBlob
-          ? new File([finalBlob], "post.jpg", { type: "image/jpeg" })
-          : originalFile!;
-        imageUrl = await uploadFile(fileToUpload, "posts");
-
-        // Calculate aspect ratio of the final image
-        if (finalBlob) {
-          imageAspect = (cropArea.w * imgNatural.w) / (cropArea.h * imgNatural.h);
-        } else {
-          imageAspect = imgNatural.w / imgNatural.h;
-        }
+      if (finalBlob) {
+        const file = new File([finalBlob], "post.jpg", { type: "image/jpeg" });
+        imageUrl = await uploadFile(file, "posts");
+      } else if (photoSrc) {
+        // No crop applied — upload original
+        const resp = await fetch(photoSrc);
+        const blob = await resp.blob();
+        const file = new File([blob], "post.jpg", { type: blob.type });
+        imageUrl = await uploadFile(file, "posts");
       }
 
-      const insertData: Record<string, unknown> = {
-        author_id: user.id,
-        content: caption,
-        image_url: imageUrl,
-        location: location || null,
-      };
-      if (imageAspect) insertData.image_aspect = Math.round(imageAspect * 100) / 100;
+      const aspect = finalAspect ?? (photoSrc ? imgNatural.w / imgNatural.h : null);
 
-      const { error } = await supabase.from("community_posts").insert(insertData);
+      const { data: inserted, error } = await supabase
+        .from("community_posts")
+        .insert({
+          author_id: user.id,
+          content: caption,
+          image_url: imageUrl,
+          location: location || null,
+        })
+        .select("id")
+        .single();
+
+      // Save image_aspect (column not in generated types yet)
+      if (!error && inserted && imageUrl && aspect) {
+        await (supabase.from("community_posts") as any)
+          .update({ image_aspect: Math.round(aspect * 100) / 100 })
+          .eq("id", inserted.id);
+      }
       if (error) throw error;
       toast.success("Publicação criada com sucesso!");
       handleClose();
@@ -295,19 +473,16 @@ export default function CreatePostModal({
   const handleClose = () => {
     setCaption("");
     setLocation("");
-    setOriginalFile(null);
-    setPhotoPreview(null);
+    setPhotoSrc(null);
     setCroppedPreview(null);
     setFinalBlob(null);
+    setFinalAspect(null);
     setEditing(false);
     setShowSuggestions(false);
-    setRotation(0);
-    setZoom(1);
-    setSelectedAspect(ASPECT_PRESETS[0]);
     onClose();
   };
 
-  const displayPreview = croppedPreview || photoPreview;
+  const displayPreview = croppedPreview || photoSrc;
 
   return (
     <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
@@ -319,144 +494,17 @@ export default function CreatePostModal({
         </DialogHeader>
 
         <div className="px-6 pb-6 space-y-5">
-          {/* ====== IMAGE EDITOR VIEW ====== */}
-          {editing && photoPreview && (
-            <>
-              {/* Aspect ratio presets */}
-              <div className="flex items-center gap-2 flex-wrap">
-                {ASPECT_PRESETS.map((preset) => (
-                  <button
-                    key={preset.label}
-                    type="button"
-                    onClick={() => {
-                      setSelectedAspect(preset);
-                      recalcCrop(preset.ratio, imgNatural.w, imgNatural.h);
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                      selectedAspect.label === preset.label
-                        ? "bg-rose-500 text-white"
-                        : "bg-white border border-gray-300 text-tc-text-primary hover:border-gray-400"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Preview with crop overlay */}
-              <div className="relative bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center"
-                   style={{ minHeight: 250 }}>
-                <img
-                  ref={imgRef}
-                  src={photoPreview}
-                  alt=""
-                  className="max-w-full max-h-[350px] object-contain"
-                  style={{ transform: `scale(${zoom}) rotate(${rotation}deg)` }}
-                />
-                {/* Crop overlay */}
-                {selectedAspect.ratio && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    {/* Top dark */}
-                    <div
-                      className="absolute bg-black/50"
-                      style={{ top: 0, left: 0, right: 0, height: `${cropArea.y * 100}%` }}
-                    />
-                    {/* Bottom dark */}
-                    <div
-                      className="absolute bg-black/50"
-                      style={{ bottom: 0, left: 0, right: 0, height: `${(1 - cropArea.y - cropArea.h) * 100}%` }}
-                    />
-                    {/* Left dark */}
-                    <div
-                      className="absolute bg-black/50"
-                      style={{
-                        top: `${cropArea.y * 100}%`,
-                        left: 0,
-                        width: `${cropArea.x * 100}%`,
-                        height: `${cropArea.h * 100}%`,
-                      }}
-                    />
-                    {/* Right dark */}
-                    <div
-                      className="absolute bg-black/50"
-                      style={{
-                        top: `${cropArea.y * 100}%`,
-                        right: 0,
-                        width: `${(1 - cropArea.x - cropArea.w) * 100}%`,
-                        height: `${cropArea.h * 100}%`,
-                      }}
-                    />
-                    {/* Crop border */}
-                    <div
-                      className="absolute border-2 border-white/80"
-                      style={{
-                        top: `${cropArea.y * 100}%`,
-                        left: `${cropArea.x * 100}%`,
-                        width: `${cropArea.w * 100}%`,
-                        height: `${cropArea.h * 100}%`,
-                      }}
-                    >
-                      {/* Grid lines */}
-                      <div className="absolute inset-0 grid grid-cols-3 grid-rows-3">
-                        {Array.from({ length: 9 }).map((_, i) => (
-                          <div key={i} className="border border-white/20" />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Controls */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setRotation((r) => (r + 90) % 360)}
-                    className="p-2 rounded-lg border border-border hover:bg-gray-50 transition-colors"
-                    title="Girar"
-                  >
-                    <RotateCw className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setZoom((z) => Math.min(z + 0.1, 3))}
-                    className="p-2 rounded-lg border border-border hover:bg-gray-50 transition-colors"
-                    title="Zoom +"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setZoom((z) => Math.max(z - 0.1, 0.5))}
-                    className="p-2 rounded-lg border border-border hover:bg-gray-50 transition-colors"
-                    title="Zoom -"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditing(false)}
-                    className="px-4 py-2 rounded-lg border border-border text-sm font-medium hover:bg-gray-50 transition-colors"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleApplyCrop}
-                    className="px-4 py-2 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors flex items-center gap-1.5"
-                  >
-                    <Crop className="h-4 w-4" />
-                    Aplicar
-                  </button>
-                </div>
-              </div>
-            </>
+          {/* ====== IMAGE EDITOR ====== */}
+          {editing && photoSrc && (
+            <ImageEditor
+              src={photoSrc}
+              imgNatural={imgNatural}
+              onApply={handleApplyCrop}
+              onCancel={() => setEditing(false)}
+            />
           )}
 
-          {/* ====== NORMAL POST VIEW ====== */}
+          {/* ====== POST FORM ====== */}
           {!editing && (
             <>
               {/* User info */}
@@ -481,7 +529,7 @@ export default function CreatePostModal({
                 </div>
               </div>
 
-              {/* Photo area */}
+              {/* Photo preview */}
               {displayPreview ? (
                 <div className="relative rounded-lg overflow-hidden bg-gray-100">
                   <img
@@ -501,10 +549,10 @@ export default function CreatePostModal({
                     <button
                       type="button"
                       onClick={() => {
-                        setOriginalFile(null);
-                        setPhotoPreview(null);
+                        setPhotoSrc(null);
                         setCroppedPreview(null);
                         setFinalBlob(null);
+                        setFinalAspect(null);
                       }}
                       className="p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors"
                       title="Remover imagem"
@@ -562,7 +610,10 @@ export default function CreatePostModal({
                     value={location}
                     onChange={(e) => handleLocationChange(e.target.value)}
                     onFocus={() => {
-                      if (location.length >= 2 && filteredLocations.length > 0)
+                      if (
+                        location.length >= 2 &&
+                        filteredLocations.length > 0
+                      )
                         setShowSuggestions(true);
                     }}
                     placeholder="Buscar localização..."
