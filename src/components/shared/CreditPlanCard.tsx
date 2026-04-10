@@ -18,11 +18,13 @@ export interface CreditPlan {
 interface CreditPlanCardProps {
   plan: CreditPlan;
   onPurchase: (planId: string) => void;
+  isLoading?: boolean;
 }
 
 export default function CreditPlanCard({
   plan,
   onPurchase,
+  isLoading = false,
 }: CreditPlanCardProps) {
   const Icon = plan.icon;
   const isPopular = plan.isPopular ?? false;
@@ -94,8 +96,9 @@ export default function CreditPlanCard({
                 : "bg-white hover:bg-muted text-tc-text-primary border border-border"
             }`}
             onClick={() => onPurchase(plan.id)}
+            disabled={isLoading}
           >
-            Comprar Agora
+            {isLoading ? "Redirecionando..." : "Comprar Agora"}
           </Button>
         </div>
       </CardContent>

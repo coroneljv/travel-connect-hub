@@ -209,6 +209,7 @@ const Register = () => {
   // Shared fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
 
@@ -427,9 +428,12 @@ const Register = () => {
   // ---------------------------------------------------------------------------
 
   const renderViajantePessoal = () => (
-    <div className="space-y-5">
-      <div>
-        <Label className="text-base font-semibold mb-2 block">Documento de Identidade</Label>
+    <div className="flex flex-col gap-4">
+      {/* Upload de Documento */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[14px] font-normal text-[#364153]">
+          Upload de Documento (Passaporte ou ID)*
+        </label>
         <label className="cursor-pointer block">
           <input
             type="file"
@@ -437,21 +441,29 @@ const Register = () => {
             accept="application/pdf,image/*"
             onChange={(e) => setDocIdentidade(e.target.files?.[0] ?? null)}
           />
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-gray-50">
+          <div className="bg-[#f3f3f3] border border-dashed border-[#dbdbdb] rounded-[14px] p-4 flex flex-col gap-2 items-center justify-center hover:border-[#364763] transition-colors">
             {docIdentidade ? (
-              <span className="text-sm text-green-600 font-medium">{docIdentidade.name}</span>
+              <span className="text-[14px] text-green-600 font-medium">{docIdentidade.name}</span>
             ) : (
               <>
-                <Upload className="w-8 h-8 text-gray-400" />
-                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar seu documento</span>
+                <Upload className="w-6 h-6 text-[#9c9c9c]" />
+                <span className="text-[14px] text-[#9c9c9c] text-center">Clique para fazer upload do seu documento</span>
+                <span className="text-[14px] text-[#9c9c9c] text-center">PNG, JPG até 10MB</span>
               </>
             )}
           </div>
         </label>
+        <div className="flex gap-1.5 items-center">
+          <Info className="w-3.5 h-3.5 text-[#9c9c9c]" />
+          <span className="text-[12px] text-[#9c9c9c]">Seus dados são criptografados e protegidos</span>
+        </div>
       </div>
 
-      <div>
-        <Label className="text-base font-semibold mb-2 block">Selfie</Label>
+      {/* Selfie de Verificação */}
+      <div className="flex flex-col gap-2">
+        <label className="text-[14px] font-normal text-[#364153]">
+          Selfie de Verificação*
+        </label>
         <label className="cursor-pointer block">
           <input
             type="file"
@@ -459,59 +471,86 @@ const Register = () => {
             accept="image/png,image/jpeg"
             onChange={(e) => setSelfieDoc(e.target.files?.[0] ?? null)}
           />
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-gray-50">
+          <div className="bg-[#f3f3f3] border border-dashed border-[#dbdbdb] rounded-[14px] p-4 flex flex-col gap-2 items-center justify-center hover:border-[#364763] transition-colors">
             {selfieDoc ? (
-              <span className="text-sm text-green-600 font-medium">{selfieDoc.name}</span>
+              <span className="text-[14px] text-green-600 font-medium">{selfieDoc.name}</span>
             ) : (
               <>
-                <Upload className="w-8 h-8 text-gray-400" />
-                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar sua selfie</span>
+                <Upload className="w-6 h-6 text-[#9c9c9c]" />
+                <span className="text-[14px] text-[#9c9c9c] text-center">Clique para fazer upload ou arraste a imagem aqui</span>
+                <span className="text-[14px] text-[#9c9c9c] text-center">PNG, JPG até 10MB</span>
               </>
             )}
           </div>
         </label>
+        <span className="text-[12px] text-[#9c9c9c] text-center">Foto clara do rosto e documento visível</span>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-email">E-mail</Label>
-        <Input
-          id="reg-email"
-          type="email"
-          placeholder="e-mail@exemplo.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="bg-gray-50"
-        />
+      {/* Por que verificação? */}
+      <div
+        className="flex gap-4 items-start px-4 py-2.5 rounded-[14px] border"
+        style={{ background: "rgba(54,71,99,0.1)", borderColor: "#364763" }}
+      >
+        <Info className="w-5 h-5 text-[#364763] shrink-0 mt-0.5" />
+        <div className="flex flex-col text-[14px] text-[#364763]">
+          <span className="font-medium">Por que verificação?</span>
+          <span className="font-normal">
+            A verificação de identidade protege tanto viajantes quanto anfitriões, criando uma comunidade confiável e segura.
+          </span>
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-password">Senha</Label>
-        <Input
-          id="reg-password"
-          type="password"
-          placeholder="******"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="bg-gray-50"
-        />
+      {/* E-mail + Telefone */}
+      <div className="flex gap-4">
+        <div className="flex-1 flex flex-col gap-2">
+          <label htmlFor="reg-email" className="text-[14px] font-normal text-[#12100f]">E-mail*</label>
+          <input
+            id="reg-email"
+            type="email"
+            placeholder="email@exemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
+          />
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <label htmlFor="reg-phone" className="text-[14px] font-normal text-[#12100f]">Telefone*</label>
+          <input
+            id="reg-phone"
+            type="tel"
+            placeholder="+55 (00) 00000-0000"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
+          />
+        </div>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="reg-phone">Telefone</Label>
-        <Input
-          id="reg-phone"
-          type="tel"
-          placeholder="+55 (00) 00000-0000"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="bg-gray-50"
-        />
+      {/* Senha + Confirmar senha */}
+      <div className="flex gap-4">
+        <div className="flex-1 flex flex-col gap-2">
+          <label htmlFor="reg-password" className="text-[14px] font-normal text-[#12100f]">Senha*</label>
+          <input
+            id="reg-password"
+            type="password"
+            placeholder="Senha"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
+          />
+        </div>
+        <div className="flex-1 flex flex-col gap-2">
+          <label htmlFor="reg-confirm" className="text-[14px] font-normal text-[#12100f]">Confirmar senha*</label>
+          <input
+            id="reg-confirm"
+            type="password"
+            placeholder="Confirme sua senha"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
+          />
+        </div>
       </div>
-
-      <InfoBox>
-        <strong>Por que verificação?</strong> A verificação de identidade protege tanto viajantes
-        quanto anfitriões, criando uma comunidade confiável e segura.
-      </InfoBox>
     </div>
   );
 
@@ -1092,100 +1131,67 @@ const Register = () => {
 
   return (
     <AuthBackground variant="split">
-      <div className="w-full max-w-lg space-y-6 py-4">
+      <div className="w-full max-w-lg space-y-5 py-4">
+
         {/* Mobile logo */}
         <div className="flex justify-center lg:hidden">
           <Logo size="md" />
         </div>
 
-        {/* Header — only for Viajante; Anfitrião card has its own header */}
-        {isViajante && (
-          <div className="space-y-1">
-            <h1 className="text-2xl font-bold text-navy-500">
-              Cadastro de Viajante
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Preencha as informações para criar seu perfil na plataforma.
-            </p>
+        {/* Progresso */}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between text-[16px]">
+            <span className="font-normal text-[#12100f]">Etapa {currentStep + 1} de {totalSteps}</span>
+            <span className="font-normal text-[#3f444c]">{Math.round(progressPercent)}%</span>
           </div>
-        )}
-
-        {/* Progress indicator */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-navy-500">
-              Etapa {currentStep + 1} de {totalSteps}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {Math.round(progressPercent)}%
-            </span>
+          {/* Barra */}
+          <div className="w-full h-[10px] bg-[#dbdbdb] rounded-full overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all"
+              style={{ width: `${progressPercent}%`, background: "#364763" }}
+            />
           </div>
-          <Progress value={progressPercent} className="h-2" />
-
-          {/* Clickable step tabs */}
-          <div
-            className={`flex overflow-x-auto ${
-              !isViajante ? "border-b border-border gap-0" : "gap-1 pb-1"
-            }`}
-          >
+          {/* Step labels */}
+          <div className="flex justify-between">
             {stepLabels.map((label, index) => (
               <button
                 key={label}
                 type="button"
                 onClick={() => setCurrentStep(index)}
-                className={
-                  !isViajante
-                    ? `flex-1 pb-2 text-xs font-medium whitespace-nowrap transition-colors border-b-2 ${
-                        index === currentStep
-                          ? "border-navy-500 text-tc-text-primary"
-                          : "border-transparent text-tc-text-hint"
-                      }`
-                    : `px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
-                        index === currentStep
-                          ? "bg-navy-500 text-white"
-                          : index < currentStep
-                          ? "bg-navy-100 text-navy-500"
-                          : "bg-gray-100 text-gray-400"
-                      }`
-                }
+                className="text-[14px] transition-colors"
+                style={{
+                  fontWeight: index === currentStep ? 500 : 400,
+                  color: index === currentStep ? "#364763" : "#9c9c9c",
+                }}
               >
-                {isViajante && index < currentStep && (
-                  <CheckCircle2 className="w-3 h-3 inline mr-1" />
-                )}
                 {label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* Step content card */}
-        <Card className={isViajante ? "border-0 shadow-lg" : ""}>
-          <CardHeader className={`pb-2 ${!isViajante ? "text-center" : ""}`}>
-            <CardTitle className="text-lg text-navy-500">
-              {isViajante ? stepLabels[currentStep] : "Anfitrião"}
+        {/* Card do formulário */}
+        <Card className="border border-[#dbdbdb] rounded-[10px] shadow-none">
+          <CardHeader className="pb-2 text-center">
+            <CardTitle className="text-[16px] font-medium text-[#12100f]">
+              {isViajante ? "Viajante" : "Anfitrião"}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-[14px] font-normal text-[#3f444c]">
               {isViajante
-                ? [
-                    "Envie seus documentos e informações de contato",
-                    "Preencha suas informações pessoais",
-                    "Selecione seus idiomas e habilidades",
-                    "Conte-nos mais sobre você",
-                    "Defina suas preferências de viagem",
-                  ][currentStep]
+                ? "Complete seu perfil para visualizar as oportunidades"
                 : "Complete seu perfil para começar a receber viajantes"}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {renderCurrentStep()}
 
-            {/* Anfitrião: buttons inside card */}
+            {/* Anfitrião: botões dentro do card */}
             {!isViajante && (
-              <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="flex gap-4 mt-6">
                 <button
                   type="button"
                   onClick={currentStep > 0 ? goBack : () => navigate("/login")}
-                  className="py-3 px-6 rounded-lg border border-border text-tc-text-primary font-medium hover:bg-gray-50 transition-colors"
+                  className="flex-1 py-3 rounded-[10px] border border-[#364763] text-[14px] font-normal text-[#364763] hover:opacity-80 transition-opacity"
                 >
                   Voltar
                 </button>
@@ -1193,51 +1199,42 @@ const Register = () => {
                   type="button"
                   onClick={handleNextOrSubmit}
                   disabled={isLoading || (isLastStep && (!declarationAccepted || !termsAccepted))}
-                  className="py-3 px-6 rounded-lg font-medium text-white transition-colors disabled:opacity-50 bg-navy-500 hover:bg-navy-600 flex items-center justify-center gap-2"
+                  className="flex-1 py-3 rounded-[10px] text-[14px] font-normal text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+                  style={{ background: "#364763" }}
                 >
-                  {isLoading ? (
-                    "Enviando..."
-                  ) : (
-                    <>
-                      {isLastStep && <CheckCircle2 className="w-4 h-4" />}
-                      {nextLabel}
-                    </>
-                  )}
+                  {isLoading ? "Enviando..." : nextLabel}
                 </button>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Viajante: buttons outside card */}
+        {/* Viajante: botões fora do card */}
         {isViajante && (
-          <div className={`grid gap-4 ${currentStep > 0 ? "grid-cols-2" : "grid-cols-1"}`}>
-            {currentStep > 0 && (
-              <button
-                type="button"
-                onClick={goBack}
-                className="py-3 px-6 rounded-lg border border-border text-tc-text-primary font-medium hover:bg-gray-50 transition-colors"
-              >
-                Voltar
-              </button>
-            )}
+          <div className={`flex gap-4 ${currentStep === 0 ? "" : ""}`}>
+            <button
+              type="button"
+              onClick={currentStep > 0 ? goBack : () => navigate("/login")}
+              className="flex-1 py-3 rounded-[10px] border border-[#364763] text-[14px] font-normal text-[#364763] hover:opacity-80 transition-opacity"
+            >
+              Voltar
+            </button>
             <button
               type="button"
               onClick={handleNextOrSubmit}
               disabled={isLoading}
-              className="py-3 px-6 rounded-lg font-medium text-white transition-colors disabled:opacity-50 bg-navy-500 hover:bg-navy-600"
+              className="flex-1 py-3 rounded-[10px] text-[14px] font-normal text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+              style={{ background: "#364763" }}
             >
               {isLoading ? "Enviando..." : nextLabel}
             </button>
           </div>
         )}
 
-        {/* Login link */}
-        <p className="text-center text-sm text-muted-foreground pb-4">
-          Já possui conta?{" "}
-          <Link to="/login" className="text-rose-500 hover:underline font-medium">
-            Login
-          </Link>
+        {/* Link login */}
+        <p className="text-center text-[14px] pb-4">
+          <span className="font-normal text-[#3f444c]">Já possui conta? </span>
+          <Link to="/login" className="font-medium text-[#cf3952] hover:underline">Login</Link>
         </p>
       </div>
 

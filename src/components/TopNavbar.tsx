@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown, Zap } from "lucide-react";
@@ -63,10 +63,13 @@ export function TopNavbar() {
       {/* Right side: credits + lang + avatar */}
       <div className="flex items-center gap-2.5 shrink-0">
         {/* Credits badge */}
-        <button className="flex items-center gap-1.5 h-[37px] px-[7px] py-px rounded-md border border-white/30 bg-white/10 text-white">
+        <Link
+          to="/credits"
+          className="flex items-center gap-1.5 h-[37px] px-[7px] py-px rounded-md border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors"
+        >
           <Zap className="h-5 w-5" />
           <span className="text-xs font-medium">5</span>
-        </button>
+        </Link>
 
         {/* Language selector */}
         <div className="flex items-center gap-1.5 h-[37px] px-[7px] py-px rounded-md border border-white/30 bg-white/10">

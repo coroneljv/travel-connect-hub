@@ -40,6 +40,7 @@ const HostProfile = lazy(() => import("./pages/community/HostProfile"));
 const PostDetail = lazy(() => import("./pages/community/PostDetail"));
 const Settings = lazy(() => import("./pages/Settings"));
 const Notifications = lazy(() => import("./pages/Notifications"));
+const Checkout = lazy(() => import("./pages/Checkout"));
 
 const queryClient = new QueryClient();
 
@@ -85,6 +86,7 @@ const App = () => (
               <Route path="/messages" element={<Navigate to="/chat" replace />} />
               <Route path="/bank-integration" element={<Suspense fallback={null}><BankIntegration /></Suspense>} />
               <Route path="/credits" element={<Suspense fallback={null}><Credits /></Suspense>} />
+              <Route path="/checkout/:planId" element={<Suspense fallback={null}><Checkout /></Suspense>} />
               <Route path="/anfitriao/oportunidades" element={<Suspense fallback={null}><HostOpportunities /></Suspense>} />
               <Route path="/anfitriao/oportunidades/:id" element={<Suspense fallback={null}><HostOpportunityDetail /></Suspense>} />
               <Route path="/anfitriao/oportunidades/:id/candidaturas" element={<Suspense fallback={null}><HostCandidates /></Suspense>} />

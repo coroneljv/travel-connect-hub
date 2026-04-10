@@ -17,7 +17,6 @@ import {
   BookOpen,
   Video,
   DollarSign,
-  Calendar,
   ChevronRight,
   Plus,
   ArrowRight,
@@ -103,39 +102,47 @@ function ViajanteDashboard({
     : "VI";
 
   const stats = [
-    { label: "Candidaturas Ativas", value: 0, icon: Calendar, color: "text-navy-500" },
-    { label: "Oportunidades Salvas", value: 0, icon: Heart, color: "text-rose-500" },
-    { label: "Avaliação Média", value: "--", icon: Star, color: "text-yellow-500" },
-    { label: "Experiências Concluídas", value: 0, icon: CheckCircle2, color: "text-emerald-500" },
+    { label: "Candidaturas Ativas", value: 0, icon: Briefcase },
+    { label: "Oportunidades Salvas", value: 0, icon: Heart },
+    { label: "Avaliação Média", value: "--", icon: Star },
+    { label: "Experiências Concluídas", value: 0, icon: CheckCircle2 },
   ];
 
   const quickLinks = [
     {
       title: "Academia de Viajantes",
       icon: GraduationCap,
-      description: "Cursos e certificacoes",
-      meta: "Explore os cursos",
+      iconColor: "#cf3952",
+      description: "Cursos e certificações",
+      meta: "120+ cursos disponíveis",
+      metaColor: "#cf3952",
       href: "/academy",
     },
     {
       title: "Meus Cursos",
       icon: BookOpen,
+      iconColor: "#155dfc",
       description: "Gerencie seus cursos",
-      meta: "Veja seus cursos",
+      meta: "3 cursos publicados",
+      metaColor: "#155dfc",
       href: "/academy",
     },
     {
       title: "Criar Novo Curso",
       icon: Video,
+      iconColor: "#cf3952",
       description: "Compartilhe conhecimento",
       meta: "Monetize suas experiências",
+      metaColor: "#cf3952",
       href: "/academy/create",
     },
     {
       title: "Integração Bancária",
       icon: DollarSign,
+      iconColor: "#2e7d32",
       description: "Receba pagamentos",
-      meta: "Configure sua conta",
+      meta: "1 banco vinculado",
+      metaColor: "#2e7d32",
       href: "/bank-integration",
     },
   ];
@@ -143,153 +150,145 @@ function ViajanteDashboard({
   const recentActivity: { text: string; time: string }[] = [];
 
   return (
-    <div className="space-y-6">
-      {/* ---- Header ---- */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
+    <div className="space-y-4">
+      {/* ---- Page title ---- */}
+      <div className="flex flex-col gap-1">
+        <p className="text-[16px] font-medium text-[#1e2939]">Início</p>
+        <p className="text-[14px] text-[#4a5565]">Visualize os dados mais relevantes</p>
+      </div>
+
+      {/* ---- Header card ---- */}
+      <div className="bg-white border border-[#dbdbdb] rounded-[10px] p-4 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          {/* Avatar + name */}
+          <div className="flex items-center gap-[10px]">
+            <div className="relative shrink-0 h-[50px] w-[50px]">
+              <Avatar className="h-[50px] w-[50px]">
                 <AvatarImage src={profile?.avatar_url ?? undefined} />
-                <AvatarFallback className="bg-navy-100 text-navy-700 text-lg font-semibold">
+                <AvatarFallback className="bg-[rgba(54,71,99,0.1)] text-[#364763] font-semibold">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold tracking-tight">
-                    Olá, {firstName}! 👋
-                  </h1>
-                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                </div>
-                <div className="flex flex-wrap items-center gap-2 mt-1">
-                  <span className="bg-navy-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                    Viajante
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    Viajante
-                  </span>
-                </div>
+              <div className="absolute bottom-0 right-0 h-6 w-6 rounded-full bg-[#2b7fff] border-2 border-white flex items-center justify-center">
+                <CheckCircle2 className="h-3.5 w-3.5 text-white" />
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-4 py-2 rounded-full">
-                <Zap className="h-4 w-4" />
-                <span className="text-sm font-semibold">0 Créditos</span>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[16px] font-medium text-[#1e2939]">
+                  Olá, {firstName}! 👋
+                </span>
+                <span
+                  className="text-[12px] text-white rounded-[10px] px-2 py-[2px]"
+                  style={{ background: "linear-gradient(to right, #364763, #cf3952)" }}
+                >
+                  Viajante
+                </span>
               </div>
-              <Link to="/notifications" className="relative p-2 rounded-full hover:bg-muted transition-colors">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-              </Link>
-              <Link to="/chat" className="relative p-2 rounded-full hover:bg-muted transition-colors">
-                <MessageSquare className="h-5 w-5 text-muted-foreground" />
-              </Link>
-              <Link to="/settings" className="p-2 rounded-full hover:bg-muted transition-colors">
-                <Settings className="h-5 w-5 text-muted-foreground" />
-              </Link>
-              <button
-                onClick={onSignOut}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-                title="Sair"
-              >
-                <LogOut className="h-5 w-5 text-muted-foreground" />
-              </button>
+              <div className="flex items-center gap-[10px] text-[14px] text-[#4a5565]">
+                <span>São Paulo, Brasil</span>
+                <span>•</span>
+                <span>Membro desde Janeiro 2024</span>
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* ---- Profile completion ---- */}
-      <Link to="/settings">
-        <Card className="hover:shadow-md transition-shadow cursor-pointer">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold">Complete seu Perfil</h3>
-              <span className="text-sm text-muted-foreground">{profileCompletion.percent}%</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+          {/* Actions */}
+          <div className="flex items-center gap-[10px]">
+            <Link to="/credits">
               <div
-                className="h-full rounded-full bg-rose-500 transition-all duration-300"
+                className="flex items-center gap-2 px-4 py-1 rounded-[10px] cursor-pointer"
+                style={{ background: "linear-gradient(to right, #f57f17, #fdd835)" }}
+              >
+                <Zap className="h-4 w-4 text-white" />
+                <span className="text-[12px] font-medium text-white">5 Créditos</span>
+              </div>
+            </Link>
+            <Link to="/notifications" className="relative h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors">
+              <Bell className="h-5 w-5 text-[#1e2939]" />
+              <span className="absolute top-2 left-[26px] h-2 w-2 rounded-full bg-[#fb2c36]" />
+            </Link>
+            <Link to="/chat" className="relative h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors">
+              <MessageSquare className="h-5 w-5 text-[#1e2939]" />
+              <span className="absolute top-2 left-[26px] h-2 w-2 rounded-full bg-[#fb2c36]" />
+            </Link>
+            <Link to="/settings" className="h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors">
+              <Settings className="h-5 w-5 text-[#1e2939]" />
+            </Link>
+            <button
+              onClick={onSignOut}
+              className="h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors"
+              title="Sair"
+            >
+              <LogOut className="h-5 w-5 text-[#1e2939]" />
+            </button>
+          </div>
+        </div>
+
+        {/* Profile completion */}
+        <Link to="/settings">
+          <div className="bg-[#f3f3f3] rounded-[10px] p-4 flex flex-col gap-2 cursor-pointer">
+            <div className="flex items-center justify-between text-[14px] font-medium">
+              <span className="text-[#364153]">Complete seu Perfil</span>
+              <span className="text-[#cf3952]">{profileCompletion.percent}%</span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-[#dbdbdb] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#cf3952] transition-all duration-300"
                 style={{ width: `${profileCompletion.percent}%` }}
               />
             </div>
-            {profileCompletion.percent < 100 ? (
-              <p className="text-xs text-muted-foreground mt-2">
-                Falta preencher: {profileCompletion.missing.join(", ")}
-              </p>
-            ) : (
-              <p className="text-xs text-emerald-600 mt-2">
-                Perfil completo! Você está pronto para receber matches.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      </Link>
+            <p className="text-[12px] text-[#4a5565]">
+              {profileCompletion.percent < 100
+                ? "Complete seu perfil para receber mais matches! Adicione foto, idiomas e experiências."
+                : "Perfil completo! Você está pronto para receber matches."}
+            </p>
+          </div>
+        </Link>
+      </div>
 
       {/* ---- Stats row ---- */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <s.icon className={`h-5 w-5 ${s.color}`} />
-              </div>
-              <p className="text-2xl font-bold mt-3">{s.value}</p>
-              <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-            </CardContent>
-          </Card>
+          <div key={s.label} className="bg-white border border-[#dbdbdb] rounded-[10px] p-4 flex items-center gap-4">
+            <div className="flex-1 flex flex-col gap-[10px] min-w-0">
+              <p className="text-[14px] text-[#3f444c]">{s.label}</p>
+              <p className="text-[28px] font-medium text-[#12100f] leading-none">{s.value}</p>
+            </div>
+            <div className="bg-[#364763] rounded-[10px] h-10 w-10 flex items-center justify-center shrink-0">
+              <s.icon className="h-5 w-5 text-white" />
+            </div>
+          </div>
         ))}
       </div>
 
       {/* ---- Feature cards ---- */}
       <div className="grid md:grid-cols-2 gap-4">
         <Link to="/opportunities">
-          <Card className="bg-navy-50 border-navy-100 hover:shadow-md transition-shadow cursor-pointer h-full">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Search className="h-5 w-5 text-navy-500" />
-                    <h3 className="font-semibold text-navy-700">
-                      Descobrir Oportunidades
-                    </h3>
-                  </div>
-                  <p className="text-sm text-navy-500">
-                    Explore +500 vagas ao redor do mundo
-                  </p>
-                  <p className="text-xs text-navy-400 mt-1">
-                    Encontre vagas ao redor do mundo
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-navy-400 mt-1" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-[rgba(54,71,99,0.1)] rounded-[10px] p-4 flex flex-col gap-[10px] cursor-pointer">
+            <Search className="h-[30px] w-[30px] text-[#364763]" />
+            <p className="text-[16px] font-medium text-[#364763]">Descobrir Oportunidades</p>
+            <p className="text-[16px] text-[#364763]">Explore +500 vagas ao redor do mundo</p>
+            <div className="flex items-center gap-2 opacity-80">
+              <span className="text-[14px] text-[#364763]">23 novas hoje</span>
+              <span className="text-[12px] font-medium text-[#364763]">•</span>
+              <span className="text-[14px] text-[#364763]">94% match disponível</span>
+            </div>
+          </div>
         </Link>
 
         <Link to="/community">
-          <Card className="bg-rose-50 border-rose-100 hover:shadow-md transition-shadow cursor-pointer h-full">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="h-5 w-5 text-rose-500" />
-                    <h3 className="font-semibold text-rose-700">
-                      Descobrir Comunidade
-                    </h3>
-                  </div>
-                  <p className="text-sm text-rose-500">
-                    Conecte-se com viajantes e anfitriões
-                  </p>
-                  <p className="text-xs text-rose-400 mt-1">
-                    Interaja com a comunidade
-                  </p>
-                </div>
-                <ChevronRight className="h-5 w-5 text-rose-400 mt-1" />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-[rgba(207,57,82,0.1)] rounded-[10px] p-4 flex flex-col gap-[10px] cursor-pointer">
+            <Users className="h-[30px] w-[30px] text-[#cf3952]" />
+            <p className="text-[16px] font-medium text-[#cf3952]">Descobrir Comunidade</p>
+            <p className="text-[16px] text-[#cf3952]">Conecte-se com viajantes e anfitriões</p>
+            <div className="flex items-center gap-2 opacity-80">
+              <span className="text-[14px] text-[#cf3952]">2,847 viajantes ativos</span>
+              <span className="text-[12px] font-medium text-[#364763]">•</span>
+              <span className="text-[14px] text-[#cf3952]">156 online agora</span>
+            </div>
+          </div>
         </Link>
       </div>
 
@@ -297,18 +296,12 @@ function ViajanteDashboard({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {quickLinks.map((ql) => (
           <Link key={ql.title} to={ql.href}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
-              <CardContent className="p-5">
-                <ql.icon className="h-6 w-6 text-rose-500 mb-3" />
-                <h4 className="text-sm font-semibold">{ql.title}</h4>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {ql.description}
-                </p>
-                <p className="text-xs text-rose-500 font-medium mt-2">
-                  {ql.meta}
-                </p>
-              </CardContent>
-            </Card>
+            <div className="bg-white border border-[#dbdbdb] rounded-[10px] p-4 flex flex-col gap-[10px] cursor-pointer hover:shadow-md transition-shadow">
+              <ql.icon className="h-[30px] w-[30px]" style={{ color: ql.iconColor }} />
+              <p className="text-[16px] font-medium text-[#1e2939]">{ql.title}</p>
+              <p className="text-[14px] text-[#4a5565]">{ql.description}</p>
+              <p className="text-[14px]" style={{ color: ql.metaColor }}>{ql.meta}</p>
+            </div>
           </Link>
         ))}
       </div>
@@ -316,61 +309,61 @@ function ViajanteDashboard({
       {/* ---- Candidaturas Recentes + Atividade Recente ---- */}
       <div className="grid md:grid-cols-2 gap-4">
         {/* Candidaturas Recentes */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold">Candidaturas Recentes</h3>
-              <Link
-                to="/proposals"
-                className="text-xs text-navy-500 hover:underline flex items-center gap-1"
-              >
-                Ver todas <ArrowRight className="h-3 w-3" />
-              </Link>
-            </div>
-
-            <div className="space-y-4">
-              {recentRequests.length === 0 && (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma candidatura recente.
-                </p>
-              )}
-              {recentRequests.map((req: any) => (
-                <div key={req.id} className="flex items-center gap-3">
-                  <div className="h-9 w-9 rounded-full bg-navy-50 flex items-center justify-center text-navy-600 font-medium text-xs">
-                    {req.title?.slice(0, 2).toUpperCase()}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <p className="text-[16px] font-medium text-[#1e2939]">Candidaturas Recentes</p>
+            <Link
+              to="/proposals"
+              className="flex items-center gap-1 text-[14px] font-medium text-[#155dfc] hover:underline"
+            >
+              Ver todas <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="bg-white border border-[#dbdbdb] rounded-[10px] p-4">
+            {recentRequests.length === 0 ? (
+              <p className="text-sm text-[#4a5565]">Nenhuma candidatura recente.</p>
+            ) : (
+              <div className="space-y-4">
+                {recentRequests.map((req: any) => (
+                  <div key={req.id} className="flex items-center gap-3">
+                    <div className="h-9 w-9 rounded-full bg-[rgba(54,71,99,0.1)] flex items-center justify-center text-[#364763] font-medium text-xs shrink-0">
+                      {req.title?.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{req.title}</p>
+                      <p className="text-xs text-[#4a5565]">{req.destination} · {req.status}</p>
+                    </div>
+                    <span className="text-xs text-[#4a5565] whitespace-nowrap">
+                      {new Date(req.created_at).toLocaleDateString()}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{req.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {req.destination} · {req.status}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(req.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Atividade Recente */}
-        <Card>
-          <CardContent className="p-6">
-            <h3 className="font-semibold mb-4">Atividade Recente</h3>
-            <div className="space-y-4">
-              {recentActivity.map((a, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="h-2 w-2 rounded-full bg-navy-400 mt-1.5 shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-sm">{a.text}</p>
-                    <p className="text-xs text-muted-foreground">{a.time}</p>
+        <div className="flex flex-col gap-4">
+          <p className="text-[16px] font-medium text-[#1e2939]">Atividade Recente</p>
+          <div className="bg-white border border-[#dbdbdb] rounded-[10px] p-4">
+            {recentActivity.length === 0 ? (
+              <p className="text-sm text-[#4a5565]">Nenhuma atividade recente.</p>
+            ) : (
+              <div className="space-y-4">
+                {recentActivity.map((a, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <div className="h-2 w-2 rounded-full bg-[#364763] mt-1.5 shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-sm">{a.text}</p>
+                      <p className="text-xs text-[#4a5565]">{a.time}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

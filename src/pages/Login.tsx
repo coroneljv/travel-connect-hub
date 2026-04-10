@@ -2,17 +2,13 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { AuthBackground } from "@/components/AuthBackground";
-import { Logo } from "@/components/Logo";
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, selectedUIRole } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
-
-  const isViajante = selectedUIRole === "viajante";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,113 +24,117 @@ const Login: React.FC = () => {
   };
 
   return (
-    <AuthBackground>
-      <div className="w-full max-w-[480px] flex flex-col items-center">
-        {/* Logo */}
-        <div className="mb-6">
-          <Logo size="lg" />
-        </div>
+    <div className="relative min-h-screen bg-[#f3f3f3] flex flex-col items-center justify-center py-8 overflow-hidden">
 
-        {/* Title */}
-        <h1 className="text-[2rem] font-bold text-navy-900 mb-2">Login</h1>
-        <p className="text-[#6B7280] text-base mb-8">
-          Preencha os campos abaixo para acessar a plataforma!
-        </p>
-
-        {/* Form Card */}
-        <div className="w-full bg-white rounded-2xl shadow-sm px-8 py-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-navy-800 mb-1.5"
-              >
-                E-mail
-              </label>
-              <input
-                id="email"
-                type="email"
-                placeholder="e-mail@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-lg text-sm text-navy-800 placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-navy-300 focus:border-transparent transition-colors"
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-navy-800 mb-1.5"
-              >
-                Senha
-              </label>
-              <input
-                id="password"
-                type="password"
-                placeholder="******"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-[#F3F4F6] border border-[#E5E7EB] rounded-lg text-sm text-navy-800 placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-navy-300 focus:border-transparent transition-colors"
-              />
-            </div>
-
-            {/* Forgot password */}
-            <div>
-              <Link
-                to="#"
-                className={`text-sm font-medium ${
-                  isViajante
-                    ? "text-rose-500 hover:text-rose-600"
-                    : "text-navy-500 hover:text-navy-600"
-                } hover:underline`}
-              >
-                Esqueceu sua senha?
-              </Link>
-            </div>
-
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-3.5 rounded-lg text-white font-semibold text-base transition-colors disabled:opacity-50 ${
-                isViajante
-                  ? "bg-rose-500 hover:bg-rose-600"
-                  : "bg-navy-500 hover:bg-navy-600"
-              }`}
-            >
-              {isLoading ? "Entrando..." : "Entrar"}
-            </button>
-
-            {/* Register link */}
-            <p className="text-center text-sm text-[#6B7280]">
-              Não possui conta?{" "}
-              <Link
-                to="/register"
-                className={`font-semibold hover:underline ${
-                  isViajante
-                    ? "text-rose-500 hover:text-rose-600"
-                    : "text-navy-500 hover:text-navy-600"
-                }`}
-              >
-                Cadastre-se
-              </Link>
-            </p>
-
-            {/* Back link */}
-            <Link
-              to="/"
-              className="block text-center text-sm text-[#6B7280] hover:text-navy-600 hover:underline transition-colors"
-            >
-              Voltar para a Tela Inicial
-            </Link>
-          </form>
+      {/* Avião — esquerda (Figma: wrapper left:-463px top:-104px 1230×1129, inner 1044×652 rotate(-34.53deg) opacity 0.7) */}
+      <div className="absolute pointer-events-none" style={{ left: "-463px", top: "-104px", width: "1229.608px", height: "1129.051px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ transform: "rotate(-34.53deg)" }}>
+          <img src="/images/bg-airplane.png" alt="" style={{ width: "1044px", height: "652px", opacity: 0.7 }} />
         </div>
       </div>
-    </AuthBackground>
+
+      {/* Mapa — direita (Figma: wrapper left:954px top:215px 741×607, inner 638×399 rotate(-21.69deg) opacity 0.7) */}
+      <div className="absolute pointer-events-none" style={{ right: "-255px", top: "215px", width: "741.003px", height: "606.989px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ transform: "rotate(-21.69deg)" }}>
+          <img src="/images/bg-map.png" alt="" style={{ width: "638px", height: "399px", opacity: 0.7 }} />
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="relative z-10 w-full max-w-[500px] flex flex-col items-center gap-6 px-4">
+
+        {/* Logo */}
+        <img
+          src="/images/logo-travel-connect.svg"
+          alt="Travel Connect"
+          style={{ height: 80, width: "auto", transform: "scaleY(-1)" }}
+        />
+
+        {/* Títulos */}
+        <div className="text-center flex flex-col gap-2">
+          <h1 className="text-[28px] font-semibold text-[#12100f]">Login</h1>
+          <p className="text-[18px] font-normal text-[#3f444c]">
+            Preencha os campos abaixo para acessar a plataforma!
+          </p>
+        </div>
+
+        {/* Card do formulário */}
+        <form
+          onSubmit={handleSubmit}
+          className="w-full bg-white rounded-[10px] border border-[#dbdbdb] p-4 flex flex-col gap-4"
+        >
+          {/* Email */}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="email" className="text-[14px] font-normal text-[#12100f]">
+              E-mail
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="e-mail@exemplo.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763] transition-colors"
+            />
+          </div>
+
+          {/* Senha */}
+          <div className="flex flex-col gap-2">
+            <label htmlFor="password" className="text-[14px] font-normal text-[#12100f]">
+              Senha
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="******"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763] transition-colors"
+            />
+          </div>
+
+          {/* Esqueceu a senha */}
+          <Link
+            to="#"
+            className="text-[14px] font-medium text-[#cf3952] hover:underline self-start"
+          >
+            Esqueceu sua senha?
+          </Link>
+
+          {/* Botão Entrar */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full h-[46px] rounded-[10px] text-[14px] font-normal text-white hover:opacity-90 transition-opacity disabled:opacity-50"
+            style={{ background: "#364763" }}
+          >
+            {isLoading ? "Entrando..." : "Entrar"}
+          </button>
+
+          {/* Cadastre-se */}
+          <div className="flex gap-2 items-center justify-center text-[14px]">
+            <span className="font-normal text-[#3f444c]">Não possui conta?</span>
+            <Link
+              to="/register"
+              className="font-medium text-[#cf3952] hover:underline"
+            >
+              Cadastre-se
+            </Link>
+          </div>
+
+          {/* Voltar */}
+          <Link
+            to="/"
+            className="text-[14px] font-medium text-[#12100f] hover:underline text-center"
+          >
+            Voltar para a Tela Inicial
+          </Link>
+
+        </form>
+      </div>
+    </div>
   );
 };
 
