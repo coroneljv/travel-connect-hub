@@ -33,13 +33,11 @@ import type { HostSignupStep3SchoolData } from "@/components/shared/HostTypeScho
 import HostTypeCompanyForm from "@/components/shared/HostTypeCompanyForm";
 import type { HostSignupStep3CompanyData } from "@/components/shared/HostTypeCompanyForm";
 import HostSignupApprovedModal from "@/components/modals/HostSignupApprovedModal";
+import { useTranslation } from "react-i18next";
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constants (pt-BR values — stored to DB, do not translate)
 // ---------------------------------------------------------------------------
-
-const VIAJANTE_STEP_LABELS = ["Pessoal", "Verificação", "Habilidades", "Sobre Mim", "Viagens"];
-const ANFITRIAO_STEP_LABELS = ["Organização", "Localização", "Informações", "Finalização"];
 
 const LANGUAGES = [
   "Inglês",
@@ -196,12 +194,100 @@ function Chip({
 // ---------------------------------------------------------------------------
 
 const Register = () => {
+  const { t } = useTranslation();
   const { signUp, selectedUIRole } = useAuth();
   const navigate = useNavigate();
 
   const isViajante = selectedUIRole === "viajante";
   const totalSteps = isViajante ? 5 : 4;
+
+  // Step labels (computed inside component for i18n)
+  const VIAJANTE_STEP_LABELS = [
+    t("auth.register.steps.personal"),
+    t("auth.register.steps.verification"),
+    t("auth.register.steps.skills"),
+    t("auth.register.steps.about"),
+    t("auth.register.steps.travel"),
+  ];
+  const ANFITRIAO_STEP_LABELS = [
+    t("auth.register.steps.organization"),
+    t("auth.register.steps.location"),
+    t("auth.register.steps.information"),
+    t("auth.register.steps.completion"),
+  ];
+
   const stepLabels = isViajante ? VIAJANTE_STEP_LABELS : ANFITRIAO_STEP_LABELS;
+
+  // Display label maps (DB values → translated display)
+  const LANGUAGE_LABELS: Record<string, string> = {
+    "Inglês": t("lists.languages.english"),
+    "Espanhol": t("lists.languages.spanish"),
+    "Alemão": t("lists.languages.german"),
+    "Português": t("lists.languages.portuguese"),
+    "Francês": t("lists.languages.french"),
+    "Italiano": t("lists.languages.italian"),
+    "Mandarim": t("lists.languages.mandarin"),
+    "Japonês": t("lists.languages.japanese"),
+    "Russo": t("lists.languages.russian"),
+    "Árabe": t("lists.languages.arabic"),
+    "Holandês": t("lists.languages.dutch"),
+    "Coreano": t("lists.languages.korean"),
+  };
+
+  const SKILL_LABELS: Record<string, string> = {
+    "Ensino de inglês": t("lists.skills.englishTeaching"),
+    "Atendimento ao Cliente": t("lists.skills.customerService"),
+    "Cozinhar": t("lists.skills.cooking"),
+    "Limpeza": t("lists.skills.cleaning"),
+    "Jardinagem": t("lists.skills.gardening"),
+    "Marketing Digital": t("lists.skills.digitalMarketing"),
+    "Construção": t("lists.skills.construction"),
+    "Fotografia": t("lists.skills.photography"),
+    "Design": t("lists.skills.design"),
+    "Ensino": t("lists.skills.teaching"),
+    "Agricultura": t("lists.skills.agriculture"),
+    "Cuidado de Animais": t("lists.skills.animalCare"),
+    "Manutenção": t("lists.skills.maintenance"),
+    "Recepção": t("lists.skills.reception"),
+    "Programação": t("lists.skills.programming"),
+    "Música": t("lists.skills.music"),
+    "Arte": t("lists.skills.art"),
+    "Esporte": t("lists.skills.sports"),
+    "Primeiros Socorros": t("lists.skills.firstAid"),
+    "Outros": t("lists.skills.others"),
+  };
+
+  const REGION_LABELS: Record<string, string> = {
+    "América do Norte": t("lists.regions.northAmerica"),
+    "América Central": t("lists.regions.centralAmerica"),
+    "América do Sul": t("lists.regions.southAmerica"),
+    "Europa Central": t("lists.regions.centralEurope"),
+    "Europa Oriental": t("lists.regions.easternEurope"),
+    "Ásia": t("lists.regions.asia"),
+    "Oceania": t("lists.regions.oceania"),
+    "África": t("lists.regions.africa"),
+    "Oriente Médio": t("lists.regions.middleEast"),
+    "Caribe": t("lists.regions.caribbean"),
+  };
+
+  const DURATION_LABELS: Record<string, string> = {
+    "1-2 semanas": t("lists.durations.1-2weeks"),
+    "3-4 semanas": t("lists.durations.3-4weeks"),
+    "1-3 meses": t("lists.durations.1-3months"),
+    "3-6 meses": t("lists.durations.3-6months"),
+    "+6 meses": t("lists.durations.6plus"),
+    "Flexível": t("lists.durations.flexible"),
+  };
+
+  const HOST_TYPE_LABELS: Record<string, string> = {
+    "ONG / Org. sem fins lucrativos": t("auth.register.hostTypes.ngo"),
+    "Família": t("auth.register.hostTypes.family"),
+    "Hostel / Albergue": t("auth.register.hostTypes.hostel"),
+    "Hotel / Pousada": t("auth.register.hostTypes.hotel"),
+    "Fazenda / Sítio": t("auth.register.hostTypes.farm"),
+    "Escola / Instituto": t("auth.register.hostTypes.school"),
+    "Empresa": t("auth.register.hostTypes.company"),
+  };
 
   const [currentStep, setCurrentStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -212,9 +298,6 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [fullName, setFullName] = useState("");
-
-  // Viajante: Pessoal (step 0)
-  // (document upload, selfie upload are visual placeholders)
 
   // Viajante: Verificacao (step 1)
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -351,7 +434,7 @@ const Register = () => {
     try {
       if (isViajante) {
         if (!email || !fullName) {
-          toast.error("Por favor preencha todos os campos obrigatórios.");
+          toast.error(t("auth.register.requiredFields"));
           setIsLoading(false);
           return;
         }
@@ -373,11 +456,11 @@ const Register = () => {
           preferredDuration: selectedDuration || undefined,
           additionalPreferences: additionalPreferences || undefined,
         });
-        toast.success("Cadastro finalizado com sucesso!");
+        toast.success(t("auth.register.success"));
         navigate("/dashboard");
       } else {
         if (!email || !orgName) {
-          toast.error("Por favor preencha todos os campos obrigatórios.");
+          toast.error(t("auth.register.requiredFields"));
           setIsLoading(false);
           return;
         }
@@ -399,7 +482,7 @@ const Register = () => {
         setShowApprovedModal(true);
       }
     } catch (error: any) {
-      toast.error(error.message || "Falha no cadastro");
+      toast.error(error.message || t("auth.register.error"));
     } finally {
       setIsLoading(false);
     }
@@ -419,9 +502,9 @@ const Register = () => {
 
   const nextLabel = isLastStep
     ? isViajante
-      ? "Finalizar"
-      : "Enviar para Validação"
-    : "Próximo";
+      ? t("auth.register.finish")
+      : t("auth.register.submitValidation")
+    : t("auth.register.next");
 
   // ---------------------------------------------------------------------------
   // Step Renderers: Viajante
@@ -432,7 +515,7 @@ const Register = () => {
       {/* Upload de Documento */}
       <div className="flex flex-col gap-2">
         <label className="text-[14px] font-normal text-[#364153]">
-          Upload de Documento (Passaporte ou ID)*
+          {t("auth.register.fields.docUpload")}
         </label>
         <label className="cursor-pointer block">
           <input
@@ -447,22 +530,22 @@ const Register = () => {
             ) : (
               <>
                 <Upload className="w-6 h-6 text-[#9c9c9c]" />
-                <span className="text-[14px] text-[#9c9c9c] text-center">Clique para fazer upload do seu documento</span>
-                <span className="text-[14px] text-[#9c9c9c] text-center">PNG, JPG até 10MB</span>
+                <span className="text-[14px] text-[#9c9c9c] text-center">{t("auth.register.fields.docUploadHint")}</span>
+                <span className="text-[14px] text-[#9c9c9c] text-center">{t("auth.register.fields.docFormat")}</span>
               </>
             )}
           </div>
         </label>
         <div className="flex gap-1.5 items-center">
           <Info className="w-3.5 h-3.5 text-[#9c9c9c]" />
-          <span className="text-[12px] text-[#9c9c9c]">Seus dados são criptografados e protegidos</span>
+          <span className="text-[12px] text-[#9c9c9c]">{t("auth.register.fields.dataEncrypted")}</span>
         </div>
       </div>
 
       {/* Selfie de Verificação */}
       <div className="flex flex-col gap-2">
         <label className="text-[14px] font-normal text-[#364153]">
-          Selfie de Verificação*
+          {t("auth.register.fields.selfie")}
         </label>
         <label className="cursor-pointer block">
           <input
@@ -477,13 +560,13 @@ const Register = () => {
             ) : (
               <>
                 <Upload className="w-6 h-6 text-[#9c9c9c]" />
-                <span className="text-[14px] text-[#9c9c9c] text-center">Clique para fazer upload ou arraste a imagem aqui</span>
-                <span className="text-[14px] text-[#9c9c9c] text-center">PNG, JPG até 10MB</span>
+                <span className="text-[14px] text-[#9c9c9c] text-center">{t("auth.register.fields.selfieHint")}</span>
+                <span className="text-[14px] text-[#9c9c9c] text-center">{t("auth.register.fields.docFormat")}</span>
               </>
             )}
           </div>
         </label>
-        <span className="text-[12px] text-[#9c9c9c] text-center">Foto clara do rosto e documento visível</span>
+        <span className="text-[12px] text-[#9c9c9c] text-center">{t("auth.register.fields.selfieDesc")}</span>
       </div>
 
       {/* Por que verificação? */}
@@ -493,32 +576,30 @@ const Register = () => {
       >
         <Info className="w-5 h-5 text-[#364763] shrink-0 mt-0.5" />
         <div className="flex flex-col text-[14px] text-[#364763]">
-          <span className="font-medium">Por que verificação?</span>
-          <span className="font-normal">
-            A verificação de identidade protege tanto viajantes quanto anfitriões, criando uma comunidade confiável e segura.
-          </span>
+          <span className="font-medium">{t("auth.register.fields.whyVerification")}</span>
+          <span className="font-normal">{t("auth.register.fields.verificationDesc")}</span>
         </div>
       </div>
 
       {/* E-mail + Telefone */}
       <div className="flex gap-4">
         <div className="flex-1 flex flex-col gap-2">
-          <label htmlFor="reg-email" className="text-[14px] font-normal text-[#12100f]">E-mail*</label>
+          <label htmlFor="reg-email" className="text-[14px] font-normal text-[#12100f]">{t("auth.register.fields.email")}</label>
           <input
             id="reg-email"
             type="email"
-            placeholder="email@exemplo.com"
+            placeholder={t("auth.register.fields.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
           />
         </div>
         <div className="flex-1 flex flex-col gap-2">
-          <label htmlFor="reg-phone" className="text-[14px] font-normal text-[#12100f]">Telefone*</label>
+          <label htmlFor="reg-phone" className="text-[14px] font-normal text-[#12100f]">{t("auth.register.fields.phone")}</label>
           <input
             id="reg-phone"
             type="tel"
-            placeholder="+55 (00) 00000-0000"
+            placeholder={t("auth.register.fields.phonePlaceholder")}
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
@@ -529,22 +610,22 @@ const Register = () => {
       {/* Senha + Confirmar senha */}
       <div className="flex gap-4">
         <div className="flex-1 flex flex-col gap-2">
-          <label htmlFor="reg-password" className="text-[14px] font-normal text-[#12100f]">Senha*</label>
+          <label htmlFor="reg-password" className="text-[14px] font-normal text-[#12100f]">{t("auth.register.fields.password")}</label>
           <input
             id="reg-password"
             type="password"
-            placeholder="Senha"
+            placeholder={t("auth.register.fields.password")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
           />
         </div>
         <div className="flex-1 flex flex-col gap-2">
-          <label htmlFor="reg-confirm" className="text-[14px] font-normal text-[#12100f]">Confirmar senha*</label>
+          <label htmlFor="reg-confirm" className="text-[14px] font-normal text-[#12100f]">{t("auth.register.fields.confirmPassword")}</label>
           <input
             id="reg-confirm"
             type="password"
-            placeholder="Confirme sua senha"
+            placeholder={t("auth.register.fields.confirmPasswordPlaceholder")}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             className="h-[50px] px-4 bg-[#f3f3f3] border border-[#dbdbdb] rounded-[10px] text-[14px] text-[#12100f] placeholder:text-[#9c9c9c] focus:outline-none focus:ring-1 focus:ring-[#364763]"
@@ -557,10 +638,10 @@ const Register = () => {
   const renderViajanteVerificacao = () => (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="reg-fullname">Nome Completo</Label>
+        <Label htmlFor="reg-fullname">{t("auth.register.fields.fullName")}</Label>
         <Input
           id="reg-fullname"
-          placeholder="Seu nome completo"
+          placeholder={t("auth.register.fields.fullNamePlaceholder")}
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
           className="bg-gray-50"
@@ -568,7 +649,7 @@ const Register = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reg-dob">Data de Nascimento</Label>
+        <Label htmlFor="reg-dob">{t("auth.register.fields.birthDate")}</Label>
         <Input
           id="reg-dob"
           type="date"
@@ -579,10 +660,10 @@ const Register = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reg-nationality">Nacionalidade</Label>
+        <Label htmlFor="reg-nationality">{t("auth.register.fields.nationality")}</Label>
         <Input
           id="reg-nationality"
-          placeholder="Ex: Brasileira"
+          placeholder={t("auth.register.fields.nationalityPlaceholder")}
           value={nationality}
           onChange={(e) => setNationality(e.target.value)}
           className="bg-gray-50"
@@ -590,10 +671,10 @@ const Register = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reg-passport">País do Passaporte</Label>
+        <Label htmlFor="reg-passport">{t("auth.register.fields.passportCountry")}</Label>
         <Input
           id="reg-passport"
-          placeholder="Ex: Brasil"
+          placeholder={t("auth.register.fields.passportCountryPlaceholder")}
           value={passportCountry}
           onChange={(e) => setPassportCountry(e.target.value)}
           className="bg-gray-50"
@@ -605,12 +686,12 @@ const Register = () => {
   const renderViajanteHabilidades = () => (
     <div className="space-y-6">
       <div>
-        <Label className="text-base font-semibold mb-3 block">Idiomas</Label>
+        <Label className="text-base font-semibold mb-3 block">{t("auth.register.fields.languages")}</Label>
         <div className="flex flex-wrap gap-2">
           {LANGUAGES.map((lang) => (
             <Chip
               key={lang}
-              label={lang}
+              label={LANGUAGE_LABELS[lang] ?? lang}
               selected={selectedLanguages.includes(lang)}
               onClick={() => setSelectedLanguages(toggleChip(selectedLanguages, lang))}
             />
@@ -619,12 +700,12 @@ const Register = () => {
       </div>
 
       <div>
-        <Label className="text-base font-semibold mb-3 block">Habilidades</Label>
+        <Label className="text-base font-semibold mb-3 block">{t("auth.register.fields.skills")}</Label>
         <div className="flex flex-wrap gap-2">
           {SKILLS.map((skill) => (
             <Chip
               key={skill}
-              label={skill}
+              label={SKILL_LABELS[skill] ?? skill}
               selected={selectedSkills.includes(skill)}
               onClick={() => setSelectedSkills(toggleChip(selectedSkills, skill))}
             />
@@ -633,7 +714,7 @@ const Register = () => {
       </div>
 
       <div>
-        <Label className="text-base font-semibold mb-2 block">Currículo</Label>
+        <Label className="text-base font-semibold mb-2 block">{t("auth.register.fields.resume")}</Label>
         <label className="cursor-pointer block">
           <input
             type="file"
@@ -647,7 +728,7 @@ const Register = () => {
             ) : (
               <>
                 <Upload className="w-8 h-8 text-gray-400" />
-                <span className="text-sm text-gray-500 text-center">Clique ou arraste para enviar seu currículo (PDF)</span>
+                <span className="text-sm text-gray-500 text-center">{t("auth.register.fields.resumeHint")}</span>
               </>
             )}
           </div>
@@ -659,10 +740,10 @@ const Register = () => {
   const renderViajanteSobreMim = () => (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="reg-bio">Mini Biografia</Label>
+        <Label htmlFor="reg-bio">{t("auth.register.fields.bio")}</Label>
         <Textarea
           id="reg-bio"
-          placeholder="Conte um pouco sobre você, suas experiências e o que te motiva a viajar..."
+          placeholder={t("auth.register.fields.bioPlaceholder")}
           value={biography}
           onChange={(e) => setBiography(e.target.value)}
           className="bg-gray-50 min-h-[120px]"
@@ -670,10 +751,10 @@ const Register = () => {
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reg-travel-style">Estilo de Viagem</Label>
+        <Label htmlFor="reg-travel-style">{t("auth.register.fields.travelStyle")}</Label>
         <Input
           id="reg-travel-style"
-          placeholder="Ex: Mochileiro, Voluntário, Nômade Digital..."
+          placeholder={t("auth.register.fields.travelStylePlaceholder")}
           value={travelStyle}
           onChange={(e) => setTravelStyle(e.target.value)}
           className="bg-gray-50"
@@ -682,7 +763,8 @@ const Register = () => {
 
       <div>
         <Label className="text-base font-semibold mb-3 block">
-          Fotos de Perfil <span className="text-sm font-normal text-gray-500">(min 2, max 6)</span>
+          {t("auth.register.fields.profilePhotos")}{" "}
+          <span className="text-sm font-normal text-gray-500">{t("auth.register.fields.profilePhotosMin")}</span>
         </Label>
         <div className="flex flex-wrap gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -706,8 +788,7 @@ const Register = () => {
       </div>
 
       <InfoBox variant="purple">
-        <strong>Destaque seu perfil</strong> — Uma boa biografia e fotos autênticas fazem toda a
-        diferença!
+        {t("auth.register.fields.profilePhotosHint")}
       </InfoBox>
     </div>
   );
@@ -715,12 +796,12 @@ const Register = () => {
   const renderViajanteViagens = () => (
     <div className="space-y-6">
       <div>
-        <Label className="text-base font-semibold mb-3 block">Regiões de Interesse</Label>
+        <Label className="text-base font-semibold mb-3 block">{t("auth.register.fields.regions")}</Label>
         <div className="flex flex-wrap gap-2">
           {REGIONS.map((region) => (
             <Chip
               key={region}
-              label={region}
+              label={REGION_LABELS[region] ?? region}
               selected={selectedRegions.includes(region)}
               onClick={() => setSelectedRegions(toggleChip(selectedRegions, region))}
             />
@@ -729,24 +810,24 @@ const Register = () => {
       </div>
 
       <div>
-        <Label className="text-base font-semibold mb-3 block">Duração Preferida</Label>
+        <Label className="text-base font-semibold mb-3 block">{t("auth.register.fields.preferredDuration")}</Label>
         <select
           value={selectedDuration}
           onChange={(e) => setSelectedDuration(e.target.value)}
           className="w-full px-4 py-3 rounded-lg border border-border bg-white text-sm text-tc-text-primary focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500"
         >
-          <option value="">Selecione...</option>
+          <option value="">{t("settings.account.selectPlaceholder")}</option>
           {DURATIONS.map((dur) => (
-            <option key={dur} value={dur}>{dur}</option>
+            <option key={dur} value={dur}>{DURATION_LABELS[dur] ?? dur}</option>
           ))}
         </select>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="reg-prefs">Preferências Adicionais</Label>
+        <Label htmlFor="reg-prefs">{t("auth.register.fields.additionalPrefs")}</Label>
         <Textarea
           id="reg-prefs"
-          placeholder="Alguma preferência ou necessidade especial que devemos saber?"
+          placeholder={t("auth.register.fields.additionalPrefsPlaceholder")}
           value={additionalPreferences}
           onChange={(e) => setAdditionalPreferences(e.target.value)}
           className="bg-gray-50 min-h-[100px]"
@@ -762,12 +843,12 @@ const Register = () => {
   const renderAnfitriaoOrganizacao = () => (
     <div className="space-y-5">
       <div className="space-y-2">
-        <Label htmlFor="reg-orgname">Nome da Organização</Label>
+        <Label htmlFor="reg-orgname">{t("auth.register.fields.orgName")}</Label>
         <div className="relative">
           <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tc-text-hint" />
           <Input
             id="reg-orgname"
-            placeholder="Ex: Green Paradise Eco Lodge"
+            placeholder={t("auth.register.fields.orgNamePlaceholder")}
             value={orgName}
             onChange={(e) => setOrgName(e.target.value)}
             className="bg-gray-50 pl-9"
@@ -777,7 +858,7 @@ const Register = () => {
 
       <div>
         <Label className="text-base font-semibold mb-3 block">
-          Tipo de Anfitrião<span className="text-rose-500"> *</span>
+          {t("auth.register.fields.hostType")}<span className="text-rose-500"> *</span>
         </Label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {HOST_TYPES.map((ht) => (
@@ -794,7 +875,9 @@ const Register = () => {
               }`}
             >
               <span className="text-2xl">{ht.emoji}</span>
-              <span className="text-sm font-medium text-tc-text-primary">{ht.label}</span>
+              <span className="text-sm font-medium text-tc-text-primary">
+                {HOST_TYPE_LABELS[ht.label] ?? ht.label}
+              </span>
             </button>
           ))}
         </div>
@@ -807,13 +890,13 @@ const Register = () => {
     <div className="space-y-5">
       <div className="space-y-2">
         <Label htmlFor="reg-address">
-          Endereço<span className="text-rose-500">*</span>
+          {t("auth.register.fields.address")}<span className="text-rose-500">*</span>
         </Label>
         <div className="relative">
           <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tc-text-hint" />
           <Input
             id="reg-address"
-            placeholder="Rua, número, complemento"
+            placeholder={t("auth.register.fields.addressPlaceholder")}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
             className="bg-gray-50 pl-9"
@@ -824,11 +907,11 @@ const Register = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="reg-city">
-            Cidade<span className="text-rose-500">*</span>
+            {t("auth.register.fields.city")}<span className="text-rose-500">*</span>
           </Label>
           <Input
             id="reg-city"
-            placeholder="Cidade"
+            placeholder={t("auth.register.fields.city")}
             value={city}
             onChange={(e) => setCity(e.target.value)}
             className="bg-gray-50"
@@ -836,11 +919,11 @@ const Register = () => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="reg-state">
-            Estado<span className="text-rose-500">*</span>
+            {t("auth.register.fields.state")}<span className="text-rose-500">*</span>
           </Label>
           <Input
             id="reg-state"
-            placeholder="Estado / Província"
+            placeholder={t("auth.register.fields.statePlaceholder")}
             value={state}
             onChange={(e) => setState(e.target.value)}
             className="bg-gray-50"
@@ -851,11 +934,11 @@ const Register = () => {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="reg-country">
-            País<span className="text-rose-500">*</span>
+            {t("auth.register.fields.country")}<span className="text-rose-500">*</span>
           </Label>
           <Input
             id="reg-country"
-            placeholder="País"
+            placeholder={t("auth.register.fields.country")}
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             className="bg-gray-50"
@@ -863,11 +946,11 @@ const Register = () => {
         </div>
         <div className="space-y-2">
           <Label htmlFor="reg-postal">
-            Código Postal<span className="text-rose-500">*</span>
+            {t("auth.register.fields.postalCode")}<span className="text-rose-500">*</span>
           </Label>
           <Input
             id="reg-postal"
-            placeholder="Código"
+            placeholder={t("auth.register.fields.postalCode")}
             value={postalCode}
             onChange={(e) => setPostalCode(e.target.value)}
             className="bg-gray-50"
@@ -968,14 +1051,14 @@ const Register = () => {
       <div className="flex flex-col items-center justify-center py-10 space-y-3">
         <Info className="h-8 w-8 text-tc-text-hint" />
         <p className="text-sm text-tc-text-secondary text-center">
-          Selecione um tipo de anfitrião na etapa <strong>Organização</strong> para preencher as informações específicas.
+          {t("auth.register.fields.selectHostTypeFirst")}
         </p>
         <button
           type="button"
           onClick={() => setCurrentStep(0)}
           className="text-sm text-navy-500 font-medium hover:underline"
         >
-          Ir para Organização
+          {t("auth.register.fields.goToOrganization")}
         </button>
       </div>
     );
@@ -986,8 +1069,8 @@ const Register = () => {
       {/* Photo upload */}
       <div>
         <Label className="text-base font-semibold mb-3 block">
-          Fotos do Local<span className="text-rose-500">*</span>{" "}
-          <span className="text-sm font-normal text-tc-text-hint">(mínimo 3 fotos)</span>
+          {t("auth.register.fields.locationPhotos")}<span className="text-rose-500">*</span>{" "}
+          <span className="text-sm font-normal text-tc-text-hint">{t("auth.register.fields.locationPhotosMin")}</span>
         </Label>
         <label className="cursor-pointer block">
           <input
@@ -1000,9 +1083,9 @@ const Register = () => {
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 flex flex-col items-center justify-center gap-2 hover:border-gray-400 transition-colors bg-gray-50">
             <Upload className="w-8 h-8 text-gray-400" />
             <span className="text-sm text-tc-text-secondary text-center">
-              Clique para fazer upload ou arraste a imagem
+              {t("auth.register.fields.locationPhotosHint")}
             </span>
-            <span className="text-xs text-tc-text-hint">PNG, JPG até 5MB</span>
+            <span className="text-xs text-tc-text-hint">{t("auth.register.fields.locationPhotosFormat")}</span>
           </div>
         </label>
         {hostPhotoPreviews.length > 0 && (
@@ -1022,11 +1105,11 @@ const Register = () => {
           </div>
         )}
         <p className="text-xs text-tc-text-hint mt-2">
-          Fotos adicionadas {hostPhotos.length} / Mínimo 3
+          {t("auth.register.fields.locationPhotosCount", { count: hostPhotos.length })}
         </p>
       </div>
 
-      {/* Declaração de Veracidade — bordered card */}
+      {/* Declaração de Veracidade */}
       <div className="border border-border rounded-lg p-4 space-y-2">
         <div className="flex items-start gap-3">
           <Checkbox
@@ -1040,12 +1123,10 @@ const Register = () => {
               htmlFor="declaration"
               className="text-sm font-semibold text-tc-text-primary cursor-pointer"
             >
-              Declaração de Veracidade<span className="text-rose-500"> *</span>
+              {t("auth.register.fields.declaration")}<span className="text-rose-500"> *</span>
             </label>
             <p className="text-xs text-tc-text-secondary leading-relaxed mt-1">
-              Declaro que todas as informações fornecidas são verdadeiras e que sou
-              responsável legal pela organização. Compreendo que informações falsas
-              podem resultar no cancelamento da conta.
+              {t("auth.register.fields.declarationText")}
             </p>
           </div>
         </div>
@@ -1060,29 +1141,27 @@ const Register = () => {
           className="mt-0.5"
         />
         <label htmlFor="terms" className="text-sm text-tc-text-secondary leading-relaxed cursor-pointer">
-          Li e aceito os{" "}
+          {t("auth.register.fields.termsPrefix")}{" "}
           <Link to="#" className="text-rose-500 font-semibold hover:underline">
-            Termos de Uso
+            {t("auth.register.fields.terms")}
           </Link>{" "}
-          e a{" "}
+          {t("auth.register.fields.termsAnd")}{" "}
           <Link to="#" className="text-rose-500 font-semibold hover:underline">
-            Política de Privacidade da Plataforma
+            {t("auth.register.fields.privacy")}
           </Link>
           <span className="text-rose-500">*</span>
         </label>
       </div>
 
-      {/* Próximos Passos — rose info box */}
+      {/* Próximos Passos */}
       <div className="flex gap-3 items-start border border-rose-200 rounded-lg p-4 bg-rose-50">
         <CheckCircle2 className="h-5 w-5 text-rose-500 mt-0.5 shrink-0" />
         <div>
           <p className="text-sm font-semibold text-tc-text-primary">
-            Próximos Passos
+            {t("auth.register.fields.nextSteps")}
           </p>
           <p className="text-xs text-tc-text-secondary leading-relaxed mt-1">
-            Após enviar seu perfil, nossa equipe irá revisar as informações em até 48
-            horas. Você receberá um e-mail quando seu perfil for aprovado e poderá
-            começar a publicar oportunidades.
+            {t("auth.register.fields.nextStepsDesc")}
           </p>
         </div>
       </div>
@@ -1141,7 +1220,9 @@ const Register = () => {
         {/* Progresso */}
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between text-[16px]">
-            <span className="font-normal text-[#12100f]">Etapa {currentStep + 1} de {totalSteps}</span>
+            <span className="font-normal text-[#12100f]">
+              {t("auth.register.stepOf", { current: currentStep + 1, total: totalSteps })}
+            </span>
             <span className="font-normal text-[#3f444c]">{Math.round(progressPercent)}%</span>
           </div>
           {/* Barra */}
@@ -1174,12 +1255,12 @@ const Register = () => {
         <Card className="border border-[#dbdbdb] rounded-[10px] shadow-none">
           <CardHeader className="pb-2 text-center">
             <CardTitle className="text-[16px] font-medium text-[#12100f]">
-              {isViajante ? "Viajante" : "Anfitrião"}
+              {isViajante ? t("auth.register.viajante") : t("auth.register.anfitriao")}
             </CardTitle>
             <CardDescription className="text-[14px] font-normal text-[#3f444c]">
               {isViajante
-                ? "Complete seu perfil para visualizar as oportunidades"
-                : "Complete seu perfil para começar a receber viajantes"}
+                ? t("auth.register.completeProfileTraveler")
+                : t("auth.register.completeProfileHost")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -1193,7 +1274,7 @@ const Register = () => {
                   onClick={currentStep > 0 ? goBack : () => navigate("/login")}
                   className="flex-1 py-3 rounded-[10px] border border-[#364763] text-[14px] font-normal text-[#364763] hover:opacity-80 transition-opacity"
                 >
-                  Voltar
+                  {t("auth.register.back")}
                 </button>
                 <button
                   type="button"
@@ -1202,7 +1283,7 @@ const Register = () => {
                   className="flex-1 py-3 rounded-[10px] text-[14px] font-normal text-white hover:opacity-90 transition-opacity disabled:opacity-50"
                   style={{ background: "#364763" }}
                 >
-                  {isLoading ? "Enviando..." : nextLabel}
+                  {isLoading ? t("auth.register.submitting") : nextLabel}
                 </button>
               </div>
             )}
@@ -1211,13 +1292,13 @@ const Register = () => {
 
         {/* Viajante: botões fora do card */}
         {isViajante && (
-          <div className={`flex gap-4 ${currentStep === 0 ? "" : ""}`}>
+          <div className="flex gap-4">
             <button
               type="button"
               onClick={currentStep > 0 ? goBack : () => navigate("/login")}
               className="flex-1 py-3 rounded-[10px] border border-[#364763] text-[14px] font-normal text-[#364763] hover:opacity-80 transition-opacity"
             >
-              Voltar
+              {t("auth.register.back")}
             </button>
             <button
               type="button"
@@ -1226,15 +1307,17 @@ const Register = () => {
               className="flex-1 py-3 rounded-[10px] text-[14px] font-normal text-white hover:opacity-90 transition-opacity disabled:opacity-50"
               style={{ background: "#364763" }}
             >
-              {isLoading ? "Enviando..." : nextLabel}
+              {isLoading ? t("auth.register.submitting") : nextLabel}
             </button>
           </div>
         )}
 
         {/* Link login */}
         <p className="text-center text-[14px] pb-4">
-          <span className="font-normal text-[#3f444c]">Já possui conta? </span>
-          <Link to="/login" className="font-medium text-[#cf3952] hover:underline">Login</Link>
+          <span className="font-normal text-[#3f444c]">{t("auth.register.hasAccount")} </span>
+          <Link to="/login" className="font-medium text-[#cf3952] hover:underline">
+            {t("auth.register.login")}
+          </Link>
         </p>
       </div>
 

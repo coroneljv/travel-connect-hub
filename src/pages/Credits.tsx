@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { Zap, Star, TrendingUp, Crown, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import CreditPlanCard from "@/components/shared/CreditPlanCard";
 import type { CreditPlan } from "@/components/shared/CreditPlanCard";
 
@@ -52,23 +53,25 @@ const PLANS: CreditPlan[] = [
   },
 ];
 
-const HOW_IT_WORKS = [
-  { step: 1, title: "Compre Host Credits", description: "Escolha o pacote ideal para suas necessidades" },
-  { step: 2, title: "Publique Vagas", description: "Cada vaga publicada consome 1 Host Credit" },
-  { step: 3, title: "Receba Candidaturas", description: "Viajantes qualificados se candidatam às suas vagas" },
-];
-
-const FAQ = [
-  { question: "Os Host Credits expiram?", answer: "Sim, exceto no plano Enterprise." },
-  { question: "Posso cancelar uma vaga?", answer: "Sim, mas o Host Credit não é devolvido após a publicação." },
-  { question: "Quais formas de pagamento são aceitas?", answer: "Cartão de crédito e débito via Stripe (Visa, Mastercard, Amex e outros)." },
-];
 
 /* ── Page ── */
 
 export default function Credits() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const HOW_IT_WORKS = [
+    { step: 1, title: t("credits.howItWorks.step1Title"), description: t("credits.howItWorks.step1Desc") },
+    { step: 2, title: t("credits.howItWorks.step2Title"), description: t("credits.howItWorks.step2Desc") },
+    { step: 3, title: t("credits.howItWorks.step3Title"), description: t("credits.howItWorks.step3Desc") },
+  ];
+
+  const FAQ = [
+    { question: t("credits.faq.q1"), answer: t("credits.faq.a1") },
+    { question: t("credits.faq.q2"), answer: t("credits.faq.a2") },
+    { question: t("credits.faq.q3"), answer: t("credits.faq.a3") },
+  ];
 
   /* Trata retorno do Stripe */
   useEffect(() => {
@@ -95,10 +98,10 @@ export default function Credits() {
       {/* Header */}
       <div>
         <h1 className="text-lg font-semibold text-tc-text-primary">
-          Loja de Créditos
+          {t("credits.title")}
         </h1>
         <p className="text-sm text-tc-text-hint">
-          Use Créditos para cadastrar suas oportunidades na plataforma!
+          {t("credits.subtitle")}
         </p>
       </div>
 
@@ -107,7 +110,7 @@ export default function Credits() {
         <div className="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-[10px] p-4">
           <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
           <p className="text-sm text-emerald-700 font-medium">
-            Pagamento confirmado! Seus créditos foram adicionados à conta.
+            {t("credits.paymentSuccess")}
           </p>
         </div>
       )}
@@ -115,7 +118,7 @@ export default function Credits() {
         <div className="flex items-center gap-3 bg-rose-50 border border-rose-200 rounded-[10px] p-4">
           <XCircle className="h-5 w-5 text-rose-500 shrink-0" />
           <p className="text-sm text-rose-600 font-medium">
-            Pagamento cancelado. Nenhum valor foi cobrado.
+            {t("credits.paymentCanceled")}
           </p>
         </div>
       )}
@@ -125,14 +128,13 @@ export default function Credits() {
         <CardContent className="py-6 flex flex-col items-center text-center">
           <span className="inline-flex items-center gap-1.5 bg-rose-500 text-white text-xs font-medium px-4 py-1.5 rounded-full">
             <Zap className="h-3.5 w-3.5" />
-            1 Host Credit = 1 Publicação de Vaga
+            {t("credits.badge")}
           </span>
           <h2 className="text-base font-semibold text-tc-text-primary mt-3">
-            Escolha o Melhor Plano para Você
+            {t("credits.choosePlan")}
           </h2>
           <p className="text-sm text-tc-text-hint mt-1 max-w-lg">
-            Publique vagas de trabalho e receba candidaturas de viajantes
-            qualificados do mundo todo
+            {t("credits.choosePlanDesc")}
           </p>
         </CardContent>
       </Card>
@@ -153,7 +155,7 @@ export default function Credits() {
         <svg viewBox="0 0 60 25" className="h-5 opacity-50" fill="currentColor">
           <path d="M59.64 14.28h-8.06v-1.87h8.06v1.87zm-10.2 5.35h-5.83l-1.42-2.77-1.41 2.77h-5.84l4.3-7.64-4.3-7.63h5.84l1.41 2.76 1.42-2.76h5.83l-4.3 7.63 4.3 7.64zM0 3.33h5.47l3.24 12.23L12 3.33h5.47l-6.35 21.34H5.65L0 3.33z"/>
         </svg>
-        <span>Pagamento 100% seguro via Stripe · Dados protegidos com criptografia SSL</span>
+        <span>{t("credits.stripeSecurity")}</span>
       </div>
 
       {/* Bottom section */}
@@ -162,7 +164,7 @@ export default function Credits() {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-sm font-semibold text-tc-text-primary mb-4">
-              Como Funciona?
+              {t("credits.howItWorks.title")}
             </h3>
             <div className="space-y-4">
               {HOW_IT_WORKS.map((item) => (
@@ -184,7 +186,7 @@ export default function Credits() {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-sm font-semibold text-tc-text-primary mb-4">
-              Dúvidas Frequentes
+              {t("credits.faq.title")}
             </h3>
             <div className="space-y-4">
               {FAQ.map((item) => (

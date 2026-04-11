@@ -13,6 +13,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import OpportunityCard from "./opportunities/OpportunityCard";
 import OpportunityFilters from "./opportunities/OpportunityFilters";
+import { useTranslation } from "react-i18next";
 
 const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=600&h=400&fit=crop",
@@ -22,39 +23,38 @@ const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1545389336-cf090694435e?w=600&h=400&fit=crop",
 ];
 
-const TABS = [
-  { key: "all", label: "Oportunidades", icon: Globe },
-  { key: "volunteer", label: "Voluntariado", icon: SmilePlus },
-  { key: "exchange", label: "Intercâmbio", icon: Briefcase },
-  { key: "favorites", label: "Favoritos", icon: Heart },
-] as const;
-
-// TODO: persistir favoritos no DB ou localStorage
-const SECTION_TITLES: Record<string, { title: string; subtitle: string }> = {
-  all: {
-    title: "Recomendados para Você",
-    subtitle: "Oportunidades com maior compatibilidade com seu perfil",
-  },
-  volunteer: {
-    title: "Voluntariado",
-    subtitle: "Oportunidades de trabalho voluntário em troca de hospedagem",
-  },
-  exchange: {
-    title: "Intercâmbio",
-    subtitle: "Programas de intercâmbio cultural e profissional",
-  },
-  favorites: {
-    title: "Seus Favoritos",
-    subtitle: "Oportunidades que você salvou",
-  },
-};
-
 const Opportunities = () => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
-  // TODO: persistir favoritos no DB
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
+
+  const TABS = [
+    { key: "all", label: t("opportunities.tabs.recommended"), icon: Globe },
+    { key: "volunteer", label: t("opportunities.tabs.volunteering"), icon: SmilePlus },
+    { key: "exchange", label: t("opportunities.tabs.exchange"), icon: Briefcase },
+    { key: "favorites", label: t("opportunities.tabs.favorites"), icon: Heart },
+  ];
+
+  const SECTION_TITLES: Record<string, { title: string; subtitle: string }> = {
+    all: {
+      title: t("opportunities.tabs.recommended"),
+      subtitle: t("opportunities.tabDescriptions.recommended"),
+    },
+    volunteer: {
+      title: t("opportunities.tabs.volunteering"),
+      subtitle: t("opportunities.tabDescriptions.volunteering"),
+    },
+    exchange: {
+      title: t("opportunities.tabs.exchange"),
+      subtitle: t("opportunities.tabDescriptions.exchange"),
+    },
+    favorites: {
+      title: t("opportunities.tabs.favorites"),
+      subtitle: t("opportunities.tabDescriptions.favorites"),
+    },
+  };
 
   const { data: opportunities = [], isLoading } = useQuery({
     queryKey: ["opportunities", search],
@@ -86,11 +86,9 @@ const Opportunities = () => {
     });
   };
 
-  // Filter opportunities by active tab using real opportunity_type
   const filtered = opportunities.filter((opp: any) => {
     if (activeTab === "all") return true;
     if (activeTab === "favorites") return favoriteIds.has(opp.id);
-    // Map DB opportunity_type to tab keys
     const type = opp.opportunity_type?.toLowerCase() ?? "";
     if (activeTab === "volunteer") return type.includes("voluntar");
     if (activeTab === "exchange") return type.includes("intercambio") || type.includes("trabalho") || type.includes("exchange");
@@ -127,19 +125,19 @@ const Opportunities = () => {
       <div className="flex gap-4 items-stretch">
         <div className="flex-1 flex items-center bg-white border border-border rounded-md px-4 py-3 gap-3">
           <div className="flex-1">
-            <p className="text-xs text-tc-text-primary">Onde</p>
+            <p className="text-xs text-tc-text-primary">{t("opportunities.where")}</p>
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar destinos"
+              placeholder={t("opportunities.wherePlaceholder")}
               className="w-full bg-transparent text-base text-tc-text-secondary placeholder:text-tc-text-secondary outline-none"
             />
           </div>
           <div className="w-px h-[39px] bg-border" />
           <div className="flex-1">
-            <p className="text-xs text-tc-text-primary">Quando</p>
-            <p className="text-base text-tc-text-secondary">Adicione Datas</p>
+            <p className="text-xs text-tc-text-primary">{t("opportunities.when")}</p>
+            <p className="text-base text-tc-text-secondary">{t("opportunities.addDates")}</p>
           </div>
           <button className="shrink-0 bg-rose-500 rounded-full p-2.5 shadow-md hover:bg-rose-600 transition-colors">
             <Search className="h-4 w-4 text-white" />
@@ -150,7 +148,7 @@ const Opportunities = () => {
           className="flex items-center gap-2.5 px-6 bg-white border border-border rounded-md text-base text-tc-text-secondary hover:bg-muted transition-colors"
         >
           <SlidersHorizontal className="h-5 w-5" />
-          Filtros
+          {t("common.filters")}
         </button>
       </div>
 
@@ -186,31 +184,26 @@ const Opportunities = () => {
         ) : filtered.length === 0 ? (
           <div className="bg-white border border-border rounded-md py-16 text-center text-tc-text-hint">
             {activeTab === "favorites"
-              ? "Você ainda não favoritou nenhuma oportunidade. Clique no coração para salvar!"
-              : "Nenhuma oportunidade encontrada."}
+              ? t("opportunities.noFavorites")
+              : t("opportunities.noResults")}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filtered.map((opp: any, i: number) => {
-              // Image: real photos first, then fallback
               const imageUrl = opp.photos?.[0] ?? FALLBACK_IMAGES[i % FALLBACK_IMAGES.length];
-              // Location from org data or destination
               const orgData = opp.organizations;
               const location = orgData?.city && orgData?.state
                 ? `${orgData.city}, ${orgData.state}`
                 : opp.destination ?? orgData?.name ?? "";
-              // Compensation from real fields
               const compensationParts: string[] = [];
               if (opp.accommodation_type) compensationParts.push(opp.accommodation_type);
               if (opp.meals?.length) compensationParts.push(opp.meals.join(" + "));
               const compensationLabel = compensationParts.length > 0
                 ? compensationParts.join(" + ")
                 : "A combinar";
-              // Duration from real fields
               const duration = opp.duration_min
                 ? opp.duration_max ? `${opp.duration_min} - ${opp.duration_max}` : opp.duration_min
                 : "";
-              // Tags from real skills
               const tags: string[] = opp.required_skills ?? [];
               return (
                 <OpportunityCard

@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useState } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Layout from "./components/Layout";
+import LanguageSelectionModal from "./components/LanguageSelectionModal";
 import Index from "./pages/Index";
 import SelectRole from "./pages/SelectRole";
 import Login from "./pages/Login";
@@ -44,11 +45,21 @@ const Checkout = lazy(() => import("./pages/Checkout"));
 
 const queryClient = new QueryClient();
 
-const App = () => (
+function hasSelectedLanguage(): boolean {
+  return localStorage.getItem("tc_lang_selected") === "true";
+}
+
+const App = () => {
+  const [langModalOpen, setLangModalOpen] = useState(!hasSelectedLanguage());
+
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      {langModalOpen && (
+        <LanguageSelectionModal onSelect={() => setLangModalOpen(false)} />
+      )}
       <BrowserRouter>
         <AuthProvider>
           <Routes>
@@ -100,6 +111,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;

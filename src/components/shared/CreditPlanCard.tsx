@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import { Star } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 export interface CreditPlan {
   id: string;
@@ -26,6 +27,7 @@ export default function CreditPlanCard({
   onPurchase,
   isLoading = false,
 }: CreditPlanCardProps) {
+  const { t } = useTranslation();
   const Icon = plan.icon;
   const isPopular = plan.isPopular ?? false;
 
@@ -98,7 +100,7 @@ export default function CreditPlanCard({
             onClick={() => onPurchase(plan.id)}
             disabled={isLoading}
           >
-            {isLoading ? "Redirecionando..." : "Comprar Agora"}
+            {isLoading ? t("credits.redirecting") : t("credits.buyNow")}
           </Button>
         </div>
       </CardContent>

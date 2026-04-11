@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const Login: React.FC = () => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -17,7 +19,7 @@ const Login: React.FC = () => {
       await signIn(email, password);
       navigate("/dashboard");
     } catch (error: any) {
-      toast.error(error.message || "Falha ao fazer login");
+      toast.error(error.message || t("auth.login.error"));
     } finally {
       setIsLoading(false);
     }
@@ -52,9 +54,9 @@ const Login: React.FC = () => {
 
         {/* Títulos */}
         <div className="text-center flex flex-col gap-2">
-          <h1 className="text-[28px] font-semibold text-[#12100f]">Login</h1>
+          <h1 className="text-[28px] font-semibold text-[#12100f]">{t("auth.login.title")}</h1>
           <p className="text-[18px] font-normal text-[#3f444c]">
-            Preencha os campos abaixo para acessar a plataforma!
+            {t("auth.login.subtitle")}
           </p>
         </div>
 
@@ -66,12 +68,12 @@ const Login: React.FC = () => {
           {/* Email */}
           <div className="flex flex-col gap-2">
             <label htmlFor="email" className="text-[14px] font-normal text-[#12100f]">
-              E-mail
+              {t("auth.login.email")}
             </label>
             <input
               id="email"
               type="email"
-              placeholder="e-mail@exemplo.com"
+              placeholder={t("auth.login.emailPlaceholder")}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -82,7 +84,7 @@ const Login: React.FC = () => {
           {/* Senha */}
           <div className="flex flex-col gap-2">
             <label htmlFor="password" className="text-[14px] font-normal text-[#12100f]">
-              Senha
+              {t("auth.login.password")}
             </label>
             <input
               id="password"
@@ -100,7 +102,7 @@ const Login: React.FC = () => {
             to="#"
             className="text-[14px] font-medium text-[#cf3952] hover:underline self-start"
           >
-            Esqueceu sua senha?
+            {t("auth.login.forgotPassword")}
           </Link>
 
           {/* Botão Entrar */}
@@ -110,17 +112,17 @@ const Login: React.FC = () => {
             className="w-full h-[46px] rounded-[10px] text-[14px] font-normal text-white hover:opacity-90 transition-opacity disabled:opacity-50"
             style={{ background: "#364763" }}
           >
-            {isLoading ? "Entrando..." : "Entrar"}
+            {isLoading ? t("auth.login.submitting") : t("auth.login.submit")}
           </button>
 
           {/* Cadastre-se */}
           <div className="flex gap-2 items-center justify-center text-[14px]">
-            <span className="font-normal text-[#3f444c]">Não possui conta?</span>
+            <span className="font-normal text-[#3f444c]">{t("auth.login.noAccount")}</span>
             <Link
               to="/register"
               className="font-medium text-[#cf3952] hover:underline"
             >
-              Cadastre-se
+              {t("auth.login.signUp")}
             </Link>
           </div>
 
@@ -129,7 +131,7 @@ const Login: React.FC = () => {
             to="/"
             className="text-[14px] font-medium text-[#12100f] hover:underline text-center"
           >
-            Voltar para a Tela Inicial
+            {t("auth.login.backToHome")}
           </Link>
 
         </form>

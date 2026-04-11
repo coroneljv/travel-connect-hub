@@ -1,4 +1,5 @@
 
+import { useTranslation } from "react-i18next";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -91,7 +92,8 @@ function ViajanteDashboard({
   recentRequests: any[];
   profileCompletion: { percent: number; missing: string[] };
 }) {
-  const firstName = profile?.full_name?.split(" ")[0] ?? "Viajante";
+  const { t } = useTranslation();
+  const firstName = profile?.full_name?.split(" ")[0] ?? t("auth.register.viajante");
   const initials = profile?.full_name
     ? profile.full_name
         .split(" ")
@@ -102,46 +104,46 @@ function ViajanteDashboard({
     : "VI";
 
   const stats = [
-    { label: "Candidaturas Ativas", value: 0, icon: Briefcase },
-    { label: "Oportunidades Salvas", value: 0, icon: Heart },
-    { label: "Avaliação Média", value: "--", icon: Star },
-    { label: "Experiências Concluídas", value: 0, icon: CheckCircle2 },
+    { label: t("dashboard.traveler.stats.activeApplications"), value: 0, icon: Briefcase },
+    { label: t("dashboard.traveler.stats.savedOpportunities"), value: 0, icon: Heart },
+    { label: t("dashboard.traveler.stats.avgRating"), value: "--", icon: Star },
+    { label: t("dashboard.traveler.stats.experiences"), value: 0, icon: CheckCircle2 },
   ];
 
   const quickLinks = [
     {
-      title: "Academia de Viajantes",
+      title: t("dashboard.traveler.quickLinks.academy"),
       icon: GraduationCap,
       iconColor: "#cf3952",
-      description: "Cursos e certificações",
-      meta: "120+ cursos disponíveis",
+      description: t("dashboard.traveler.quickLinks.academyDesc"),
+      meta: t("dashboard.traveler.quickLinks.academyMeta"),
       metaColor: "#cf3952",
       href: "/academy",
     },
     {
-      title: "Meus Cursos",
+      title: t("dashboard.traveler.quickLinks.myCourses"),
       icon: BookOpen,
       iconColor: "#155dfc",
-      description: "Gerencie seus cursos",
-      meta: "3 cursos publicados",
+      description: t("dashboard.traveler.quickLinks.myCoursesDesc"),
+      meta: t("dashboard.traveler.quickLinks.myCoursesMeta"),
       metaColor: "#155dfc",
       href: "/academy",
     },
     {
-      title: "Criar Novo Curso",
+      title: t("dashboard.traveler.quickLinks.createCourse"),
       icon: Video,
       iconColor: "#cf3952",
-      description: "Compartilhe conhecimento",
-      meta: "Monetize suas experiências",
+      description: t("dashboard.traveler.quickLinks.createCourseDesc"),
+      meta: t("dashboard.traveler.quickLinks.createCourseMeta"),
       metaColor: "#cf3952",
       href: "/academy/create",
     },
     {
-      title: "Integração Bancária",
+      title: t("dashboard.traveler.quickLinks.bankIntegration"),
       icon: DollarSign,
       iconColor: "#2e7d32",
-      description: "Receba pagamentos",
-      meta: "1 banco vinculado",
+      description: t("dashboard.traveler.quickLinks.bankIntegrationDesc"),
+      meta: t("dashboard.traveler.quickLinks.bankIntegrationMeta"),
       metaColor: "#2e7d32",
       href: "/bank-integration",
     },
@@ -153,8 +155,8 @@ function ViajanteDashboard({
     <div className="space-y-4">
       {/* ---- Page title ---- */}
       <div className="flex flex-col gap-1">
-        <p className="text-[16px] font-medium text-[#1e2939]">Início</p>
-        <p className="text-[14px] text-[#4a5565]">Visualize os dados mais relevantes</p>
+        <p className="text-[16px] font-medium text-[#1e2939]">{t("nav.home")}</p>
+        <p className="text-[14px] text-[#4a5565]">{t("dashboard.subtitle")}</p>
       </div>
 
       {/* ---- Header card ---- */}
@@ -177,19 +179,19 @@ function ViajanteDashboard({
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
                 <span className="text-[16px] font-medium text-[#1e2939]">
-                  Olá, {firstName}! 👋
+                  {t("dashboard.greeting", { name: firstName })} 👋
                 </span>
                 <span
                   className="text-[12px] text-white rounded-[10px] px-2 py-[2px]"
                   style={{ background: "linear-gradient(to right, #364763, #cf3952)" }}
                 >
-                  Viajante
+                  {t("auth.register.viajante")}
                 </span>
               </div>
               <div className="flex items-center gap-[10px] text-[14px] text-[#4a5565]">
-                <span>São Paulo, Brasil</span>
+                <span>{t("dashboard.location")}</span>
                 <span>•</span>
-                <span>Membro desde Janeiro 2024</span>
+                <span>{t("dashboard.memberSince")}</span>
               </div>
             </div>
           </div>
@@ -202,7 +204,7 @@ function ViajanteDashboard({
                 style={{ background: "linear-gradient(to right, #f57f17, #fdd835)" }}
               >
                 <Zap className="h-4 w-4 text-white" />
-                <span className="text-[12px] font-medium text-white">5 Créditos</span>
+                <span className="text-[12px] font-medium text-white">5 {t("common.credits")}</span>
               </div>
             </Link>
             <Link to="/notifications" className="relative h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors">
@@ -230,7 +232,7 @@ function ViajanteDashboard({
         <Link to="/settings">
           <div className="bg-[#f3f3f3] rounded-[10px] p-4 flex flex-col gap-2 cursor-pointer">
             <div className="flex items-center justify-between text-[14px] font-medium">
-              <span className="text-[#364153]">Complete seu Perfil</span>
+              <span className="text-[#364153]">{t("dashboard.completeProfile")}</span>
               <span className="text-[#cf3952]">{profileCompletion.percent}%</span>
             </div>
             <div className="h-2 w-full rounded-full bg-[#dbdbdb] overflow-hidden">
@@ -241,8 +243,8 @@ function ViajanteDashboard({
             </div>
             <p className="text-[12px] text-[#4a5565]">
               {profileCompletion.percent < 100
-                ? "Complete seu perfil para receber mais matches! Adicione foto, idiomas e experiências."
-                : "Perfil completo! Você está pronto para receber matches."}
+                ? t("dashboard.completeProfileHint")
+                : t("dashboard.profileComplete")}
             </p>
           </div>
         </Link>
@@ -268,12 +270,12 @@ function ViajanteDashboard({
         <Link to="/opportunities">
           <div className="bg-[rgba(54,71,99,0.1)] rounded-[10px] p-4 flex flex-col gap-[10px] cursor-pointer">
             <Search className="h-[30px] w-[30px] text-[#364763]" />
-            <p className="text-[16px] font-medium text-[#364763]">Descobrir Oportunidades</p>
-            <p className="text-[16px] text-[#364763]">Explore +500 vagas ao redor do mundo</p>
+            <p className="text-[16px] font-medium text-[#364763]">{t("dashboard.traveler.discoverOpportunities")}</p>
+            <p className="text-[16px] text-[#364763]">{t("dashboard.traveler.discoverOpportunitiesDesc")}</p>
             <div className="flex items-center gap-2 opacity-80">
-              <span className="text-[14px] text-[#364763]">23 novas hoje</span>
+              <span className="text-[14px] text-[#364763]">{t("dashboard.traveler.newToday")}</span>
               <span className="text-[12px] font-medium text-[#364763]">•</span>
-              <span className="text-[14px] text-[#364763]">94% match disponível</span>
+              <span className="text-[14px] text-[#364763]">{t("dashboard.traveler.matchAvailable")}</span>
             </div>
           </div>
         </Link>
@@ -281,12 +283,12 @@ function ViajanteDashboard({
         <Link to="/community">
           <div className="bg-[rgba(207,57,82,0.1)] rounded-[10px] p-4 flex flex-col gap-[10px] cursor-pointer">
             <Users className="h-[30px] w-[30px] text-[#cf3952]" />
-            <p className="text-[16px] font-medium text-[#cf3952]">Descobrir Comunidade</p>
-            <p className="text-[16px] text-[#cf3952]">Conecte-se com viajantes e anfitriões</p>
+            <p className="text-[16px] font-medium text-[#cf3952]">{t("dashboard.traveler.discoverCommunity")}</p>
+            <p className="text-[16px] text-[#cf3952]">{t("dashboard.traveler.discoverCommunityDesc")}</p>
             <div className="flex items-center gap-2 opacity-80">
-              <span className="text-[14px] text-[#cf3952]">2,847 viajantes ativos</span>
+              <span className="text-[14px] text-[#cf3952]">{t("dashboard.traveler.activeTravelers")}</span>
               <span className="text-[12px] font-medium text-[#364763]">•</span>
-              <span className="text-[14px] text-[#cf3952]">156 online agora</span>
+              <span className="text-[14px] text-[#cf3952]">{t("dashboard.traveler.onlineNow")}</span>
             </div>
           </div>
         </Link>
@@ -311,7 +313,7 @@ function ViajanteDashboard({
         {/* Candidaturas Recentes */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <p className="text-[16px] font-medium text-[#1e2939]">Candidaturas Recentes</p>
+            <p className="text-[16px] font-medium text-[#1e2939]">{t("dashboard.traveler.recentApplications")}</p>
             <Link
               to="/proposals"
               className="flex items-center gap-1 text-[14px] font-medium text-[#155dfc] hover:underline"
@@ -321,7 +323,7 @@ function ViajanteDashboard({
           </div>
           <div className="bg-white border border-[#dbdbdb] rounded-[10px] p-4">
             {recentRequests.length === 0 ? (
-              <p className="text-sm text-[#4a5565]">Nenhuma candidatura recente.</p>
+              <p className="text-sm text-[#4a5565]">{t("dashboard.traveler.noRecentApplications")}</p>
             ) : (
               <div className="space-y-4">
                 {recentRequests.map((req: any) => (
@@ -345,10 +347,10 @@ function ViajanteDashboard({
 
         {/* Atividade Recente */}
         <div className="flex flex-col gap-4">
-          <p className="text-[16px] font-medium text-[#1e2939]">Atividade Recente</p>
+          <p className="text-[16px] font-medium text-[#1e2939]">{t("dashboard.traveler.recentActivity")}</p>
           <div className="bg-white border border-[#dbdbdb] rounded-[10px] p-4">
             {recentActivity.length === 0 ? (
-              <p className="text-sm text-[#4a5565]">Nenhuma atividade recente.</p>
+              <p className="text-sm text-[#4a5565]">{t("dashboard.traveler.noRecentActivity")}</p>
             ) : (
               <div className="space-y-4">
                 {recentActivity.map((a, i) => (
@@ -387,7 +389,8 @@ function AnfitriaoDashboard({
   recentRequests: any[];
   onSignOut: () => void;
 }) {
-  const firstName = profile?.full_name?.split(" ")[0] ?? "Anfitriao";
+  const { t } = useTranslation();
+  const firstName = profile?.full_name?.split(" ")[0] ?? t("auth.register.anfitriao");
   const initials = profile?.full_name
     ? profile.full_name
         .split(" ")
@@ -398,9 +401,9 @@ function AnfitriaoDashboard({
     : "AN";
 
   const stats = [
-    { label: "Candidaturas", value: requestCount, icon: FileText, bg: "bg-rose-500" },
-    { label: "Oportunidades", value: openRequests, icon: Briefcase, bg: "bg-rose-500" },
-    { label: "Avaliações", value: "--", icon: Star, bg: "bg-navy-500" },
+    { label: t("dashboard.host.stats.applications"), value: requestCount, icon: FileText, bg: "bg-rose-500" },
+    { label: t("dashboard.host.stats.opportunities"), value: openRequests, icon: Briefcase, bg: "bg-rose-500" },
+    { label: t("dashboard.host.stats.reviews"), value: "--", icon: Star, bg: "bg-navy-500" },
   ];
 
 
@@ -424,15 +427,15 @@ function AnfitriaoDashboard({
               <div>
                 <div className="flex items-center gap-2">
                   <h1 className="text-2xl font-bold tracking-tight">
-                    Olá, {firstName}! 👋
+                    {t("dashboard.greeting", { name: firstName })} 👋
                   </h1>
                   <span className="bg-rose-500 text-white px-3 py-0.5 rounded-full text-xs font-medium">
-                    Anfitriao
+                    {t("auth.register.anfitriao")}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-1 mt-1">
                   <span className="text-sm text-muted-foreground">
-                    Anfitriao
+                    {t("auth.register.anfitriao")}
                   </span>
                 </div>
               </div>
@@ -471,10 +474,10 @@ function AnfitriaoDashboard({
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-white">
-                    Criar Nova Oportunidade
+                    {t("dashboard.host.createOpportunity")}
                   </h3>
                   <p className="text-sm text-white/80">
-                    Publique uma nova vaga e comece a receber candidatos
+                    {t("dashboard.host.createOpportunityDesc")}
                   </p>
                 </div>
               </div>
@@ -493,13 +496,13 @@ function AnfitriaoDashboard({
               <DollarSign className="h-5 w-5 text-emerald-600" />
             </div>
             <div className="flex-1">
-              <h4 className="text-sm font-semibold">Integracao Bancaria</h4>
+              <h4 className="text-sm font-semibold">{t("dashboard.host.bankIntegration")}</h4>
               <p className="text-xs text-muted-foreground">
-                Receba pagamentos
+                {t("dashboard.host.bankIntegrationDesc")}
               </p>
             </div>
             <span className="text-xs text-emerald-600 font-medium">
-              Configurar
+              {t("common.configure")}
             </span>
           </div>
         </CardContent>
@@ -515,13 +518,13 @@ function AnfitriaoDashboard({
                 <Zap className="h-5 w-5 text-rose-500" />
               </div>
               <div className="flex-1">
-                <h4 className="text-sm font-semibold">Host Credits</h4>
+                <h4 className="text-sm font-semibold">{t("dashboard.host.hostCredits")}</h4>
                 <p className="text-xs text-muted-foreground">
-                  Compre creditos para publicar vagas
+                  {t("dashboard.host.hostCreditsDesc")}
                 </p>
               </div>
               <span className="text-xs text-rose-500 font-medium">
-                5 creditos
+                5 {t("common.credits")}
               </span>
             </div>
           </CardContent>
@@ -550,7 +553,7 @@ function AnfitriaoDashboard({
       {/* ---- Candidaturas Recentes ---- */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-tc-text-primary">Candidaturas Recentes</h3>
+          <h3 className="font-semibold text-tc-text-primary">{t("dashboard.host.recentApplications")}</h3>
           <Link
             to="/anfitriao/candidaturas"
             className="text-sm text-tc-text-secondary hover:underline flex items-center gap-1"
@@ -562,7 +565,7 @@ function AnfitriaoDashboard({
         <Card>
           <CardContent className="p-6">
             <p className="text-sm text-muted-foreground text-center">
-              Nenhuma candidatura recebida
+              {t("dashboard.host.noApplications")}
             </p>
           </CardContent>
         </Card>

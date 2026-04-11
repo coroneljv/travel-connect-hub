@@ -1,23 +1,62 @@
+import { useState, useRef, useEffect } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { Logo } from "./Logo";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronDown, Zap } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { dbRoleToUIRole } from "@/lib/roles";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 
-const BASE_NAV = [
-  { label: "Início", path: "/dashboard" },
-  { label: "Oportunidades", viajante: "/opportunities", anfitriao: "/anfitriao/oportunidades" },
-  { label: "Candidaturas", path: "/applications" },
-  { label: "Academy", path: "/academy" },
-  { label: "Avaliações", path: "/reviews" },
-  { label: "Comunidade", path: "/community" },
+const LANG_OPTIONS = [
+  { code: "pt-BR", label: "Português", flag: "🇧🇷" },
+  { code: "en",    label: "English",   flag: "🇺🇸" },
+  { code: "es",    label: "Español",   flag: "🇪🇸" },
 ];
 
 export function TopNavbar() {
+  const { t } = useTranslation();
   const { profile, userRole, signOut } = useAuth();
   const navigate = useNavigate();
   const uiRole = userRole ? dbRoleToUIRole(userRole) : null;
+
+  const [langOpen, setLangOpen] = useState(false);
+  const langRef = useRef<HTMLDivElement>(null);
+
+  const currentLang = LANG_OPTIONS.find((l) => l.code === i18n.language)
+    ?? LANG_OPTIONS[0];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setLangOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function changeLang(code: string) {
+    i18n.changeLanguage(code);
+    // Persist to localStorage so Settings page and next boot pick it up
+    try {
+      const existing = JSON.parse(localStorage.getItem("tc_lang_prefs") ?? "{}");
+      localStorage.setItem("tc_lang_prefs", JSON.stringify({ ...existing, language: code }));
+    } catch {
+      localStorage.setItem("tc_lang_prefs", JSON.stringify({ language: code }));
+    }
+    setLangOpen(false);
+  }
+
+  const NAV_ITEMS = [
+    { label: t("nav.home"),          path: "/dashboard" },
+    { label: t("nav.opportunities"), viajante: "/opportunities", anfitriao: "/anfitriao/oportunidades" },
+    { label: t("nav.applications"),  path: "/applications" },
+    { label: t("nav.academy"),       path: "/academy" },
+    { label: t("nav.reviews"),       path: "/reviews" },
+    { label: t("nav.community"),     path: "/community" },
+  ];
 
   const initials = profile?.full_name
     ? profile.full_name
@@ -37,7 +76,7 @@ export function TopNavbar() {
 
       {/* Nav Links */}
       <nav className="hidden md:flex items-center gap-8 flex-1 h-full overflow-hidden">
-        {BASE_NAV.map((item) => {
+        {NAV_ITEMS.map((item) => {
           const path =
             "path" in item && item.path
               ? item.path
@@ -72,12 +111,38 @@ export function TopNavbar() {
         </Link>
 
         {/* Language selector */}
-        <div className="flex items-center gap-1.5 h-[37px] px-[7px] py-px rounded-md border border-white/30 bg-white/10">
-          <span className="text-lg">🇧🇷</span>
-          <ChevronDown className="h-4 w-4 text-white" />
+        <div className="relative" ref={langRef}>
+          <button
+            onClick={() => setLangOpen((v) => !v)}
+            className="flex items-center gap-1.5 h-[37px] px-[7px] py-px rounded-md border border-white/30 bg-white/10 text-white hover:bg-white/20 transition-colors"
+          >
+            <span className="text-lg leading-none">{currentLang.flag}</span>
+            <ChevronDown
+              className={`h-4 w-4 text-white transition-transform ${langOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {langOpen && (
+            <div className="absolute right-0 top-full mt-1 w-40 rounded-lg border border-white/20 bg-[#2D3A4A] shadow-xl overflow-hidden z-50">
+              {LANG_OPTIONS.map((opt) => (
+                <button
+                  key={opt.code}
+                  onClick={() => changeLang(opt.code)}
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors ${
+                    opt.code === i18n.language
+                      ? "bg-white/20 text-white font-medium"
+                      : "text-white/80 hover:bg-white/10"
+                  }`}
+                >
+                  <span className="text-base">{opt.flag}</span>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Avatar + dropdown */}
+        {/* Avatar */}
         <button
           onClick={() => navigate("/profile")}
           className="flex items-center gap-2.5 h-full"

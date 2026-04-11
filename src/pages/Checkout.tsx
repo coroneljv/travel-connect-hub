@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { PLAN_MAP } from "@/lib/plans";
+import { useTranslation } from "react-i18next";
 
 /* ─── Helpers de formatação ─── */
 
@@ -75,6 +76,7 @@ const inputCls =
 
 /* ─── Page ─── */
 export default function Checkout() {
+  const { t } = useTranslation();
   const { planId } = useParams<{ planId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -96,9 +98,9 @@ export default function Checkout() {
     return (
       <div className="min-h-screen bg-[#f3f3f3] flex items-center justify-center">
         <div className="text-center">
-          <p className="text-[#4a5565] mb-4">Plano não encontrado.</p>
+          <p className="text-[#4a5565] mb-4">{t("checkout.planNotFound")}.</p>
           <Link to="/credits" className="text-[#cf3952] hover:underline text-sm">
-            Voltar à Loja de Créditos
+            {t("checkout.backToCreditsStore")}
           </Link>
         </div>
       </div>
@@ -158,7 +160,7 @@ export default function Checkout() {
         />
         <div className="flex items-center gap-2 text-white/70 text-[13px]">
           <Lock className="h-3.5 w-3.5" />
-          Checkout Seguro
+          {t("checkout.secureCheckout")}
         </div>
       </div>
 
@@ -169,7 +171,7 @@ export default function Checkout() {
           className="inline-flex items-center gap-1.5 text-[13px] text-[#4a5565] hover:text-[#1e2939] mb-6 transition-colors"
         >
           <ChevronLeft className="h-4 w-4" />
-          Voltar para Loja de Créditos
+          {t("checkout.backToCreditsStore")}
         </Link>
 
         <div className="grid md:grid-cols-[1fr_320px] gap-6 items-start">
@@ -178,16 +180,16 @@ export default function Checkout() {
             {/* Section header */}
             <div className="px-6 py-4 border-b border-[#f3f3f3]">
               <h2 className="text-[16px] font-semibold text-[#1e2939]">
-                Dados de Pagamento
+                {t("checkout.paymentData")}
               </h2>
               <p className="text-[13px] text-[#4a5565] mt-0.5">
-                Seus dados são protegidos com criptografia SSL de 256 bits
+                {t("checkout.sslProtectedDesc")}
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 flex flex-col gap-5">
               {/* Email */}
-              <Field label="E-mail de confirmação">
+              <Field label={t("checkout.emailConfirmation")}>
                 <input
                   type="email"
                   className={inputCls}
@@ -199,7 +201,7 @@ export default function Checkout() {
               </Field>
 
               {/* CPF */}
-              <Field label="CPF" hint="Para emissão de nota fiscal">
+              <Field label={t("checkout.cpf")} hint={t("checkout.cpfHint")}>
                 <input
                   type="text"
                   className={inputCls}
@@ -220,7 +222,7 @@ export default function Checkout() {
               <div className="border-t border-[#f3f3f3] pt-1" />
 
               {/* Card name */}
-              <Field label="Nome impresso no cartão">
+              <Field label={t("checkout.cardNamePrinted")}>
                 <input
                   type="text"
                   className={inputCls}
@@ -234,7 +236,7 @@ export default function Checkout() {
               </Field>
 
               {/* Card number */}
-              <Field label="Número do cartão">
+              <Field label={t("checkout.cardNumber")}>
                 <div className="relative">
                   <input
                     type="text"
@@ -255,7 +257,7 @@ export default function Checkout() {
 
               {/* Expiry + CVV */}
               <div className="grid grid-cols-2 gap-4">
-                <Field label="Validade" hint="MM/AA">
+                <Field label={t("checkout.expiry")} hint="MM/AA">
                   <input
                     type="text"
                     className={inputCls}
@@ -269,7 +271,7 @@ export default function Checkout() {
                   />
                 </Field>
 
-                <Field label="CVV" hint={brand === "amex" ? "4 dígitos" : "3 dígitos"}>
+                <Field label={t("checkout.cvv")} hint={brand === "amex" ? "4 dígitos" : "3 dígitos"}>
                   <div className="relative">
                     <input
                       type="text"
@@ -291,12 +293,12 @@ export default function Checkout() {
               </div>
 
               {/* Installments (visual only) */}
-              <Field label="Parcelamento">
+              <Field label={t("checkout.installments")}>
                 <select
                   className={`${inputCls} cursor-pointer`}
                   defaultValue="1x"
                 >
-                  <option value="1x">1x de {plan.totalPrice} sem juros</option>
+                  <option value="1x">1x de {plan.totalPrice} {t("checkout.installmentsNoInterest")}</option>
                   <option value="2x">
                     2x de{" "}
                     {(
@@ -305,7 +307,7 @@ export default function Checkout() {
                       ) / 2
                     )
                       .toFixed(2)
-                      .replace(".", ",")} sem juros
+                      .replace(".", ",")} {t("checkout.installmentsNoInterest")}
                   </option>
                   <option value="3x">
                     3x de{" "}
@@ -315,7 +317,7 @@ export default function Checkout() {
                       ) / 3
                     )
                       .toFixed(2)
-                      .replace(".", ",")} sem juros
+                      .replace(".", ",")} {t("checkout.installmentsNoInterest")}
                   </option>
                 </select>
               </Field>
@@ -337,12 +339,12 @@ export default function Checkout() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                     </svg>
-                    Processando…
+                    {t("checkout.payingButton")}
                   </>
                 ) : (
                   <>
                     <Lock className="h-4 w-4" />
-                    Pagar {plan.totalPrice}
+                    {t("checkout.payButton", { price: plan.totalPrice })}
                   </>
                 )}
               </button>
@@ -365,7 +367,7 @@ export default function Checkout() {
             {/* Plan card */}
             <div className="bg-white rounded-[10px] border border-[#dbdbdb] p-5">
               <h3 className="text-[14px] font-semibold text-[#1e2939] mb-4">
-                Resumo do Pedido
+                {t("checkout.orderSummary")}
               </h3>
 
               {/* Plan info */}
@@ -381,12 +383,12 @@ export default function Checkout() {
                     Plano {plan.name}
                   </p>
                   <p className="text-[12px] text-[#4a5565]">
-                    {plan.credits} Host Créditos
+                    {plan.credits} Host Credits
                   </p>
                 </div>
                 {plan.isPopular && (
                   <span className="ml-auto text-[10px] font-semibold text-white bg-[#cf3952] px-2 py-0.5 rounded-full">
-                    Popular
+                    {t("checkout.popular")}
                   </span>
                 )}
               </div>
@@ -394,16 +396,16 @@ export default function Checkout() {
               {/* Price breakdown */}
               <div className="flex flex-col gap-2 py-4 text-[13px]">
                 <div className="flex justify-between">
-                  <span className="text-[#4a5565]">Subtotal</span>
+                  <span className="text-[#4a5565]">{t("checkout.subtotal")}</span>
                   <span className="text-[#1e2939]">{plan.totalPrice}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#4a5565]">Taxa de processamento</span>
-                  <span className="text-[#4a5565]">Inclusa</span>
+                  <span className="text-[#4a5565]">{t("checkout.processingFee")}</span>
+                  <span className="text-[#4a5565]">{t("checkout.included")}</span>
                 </div>
                 {plan.paymentType && (
                   <div className="flex justify-between">
-                    <span className="text-[#4a5565]">Tipo</span>
+                    <span className="text-[#4a5565]">{t("checkout.type")}</span>
                     <span className="text-[#4a5565] capitalize">
                       {plan.paymentType}
                     </span>
@@ -412,7 +414,7 @@ export default function Checkout() {
               </div>
 
               <div className="border-t border-[#dbdbdb] pt-4 flex justify-between items-baseline">
-                <span className="text-[14px] font-semibold text-[#1e2939]">Total</span>
+                <span className="text-[14px] font-semibold text-[#1e2939]">{t("checkout.total")}</span>
                 <span className="text-[22px] font-bold text-[#1e2939]">
                   {plan.totalPrice}
                 </span>
@@ -424,15 +426,15 @@ export default function Checkout() {
             {/* What you get */}
             <div className="bg-white rounded-[10px] border border-[#dbdbdb] p-5">
               <h3 className="text-[13px] font-semibold text-[#1e2939] mb-3">
-                O que você recebe
+                {t("checkout.benefits.title")}
               </h3>
               <ul className="flex flex-col gap-2.5">
                 {[
-                  `${plan.credits} publicações de vagas`,
+                  `${plan.credits} ${t("checkout.jobPostings")}`,
                   plan.validity,
-                  "Candidaturas ilimitadas por vaga",
-                  "Suporte via chat",
-                  plan.id === "enterprise" ? "Gerente de conta dedicado" : "Acesso ao painel analítico",
+                  t("checkout.benefits.unlimited"),
+                  t("checkout.chatSupport"),
+                  plan.id === "enterprise" ? t("checkout.dedicatedManager") : t("checkout.analyticsPanel"),
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2 text-[12px] text-[#4a5565]">
                     <Check className="h-3.5 w-3.5 text-emerald-500 shrink-0 mt-0.5" />
@@ -446,15 +448,13 @@ export default function Checkout() {
             <div className="flex items-start gap-2 px-1">
               <Lock className="h-3.5 w-3.5 text-[#9c9c9c] shrink-0 mt-0.5" />
               <p className="text-[11px] text-[#9c9c9c] leading-relaxed">
-                A Travel Connect <strong>não armazena</strong> dados do seu
-                cartão. O pagamento é processado com segurança pela Stripe, líder
-                mundial em pagamentos online.
+                {t("checkout.noCardStorage")}
               </p>
             </div>
 
             {/* Accepted cards */}
             <div className="bg-white rounded-[10px] border border-[#dbdbdb] p-4">
-              <p className="text-[11px] text-[#9c9c9c] mb-3">Cartões aceitos</p>
+              <p className="text-[11px] text-[#9c9c9c] mb-3">{t("checkout.acceptedCards")}</p>
               <div className="flex items-center gap-2 flex-wrap">
                 {["VISA", "MC", "AMEX", "ELO", "HIPERCARD"].map((c) => (
                   <span

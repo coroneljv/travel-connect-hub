@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Bell, MessageSquare, Award, Briefcase, CheckCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Notification {
   id: string;
@@ -19,17 +20,18 @@ const ICON_MAP = {
 };
 
 export default function Notifications() {
+  const { t } = useTranslation();
   // Empty state — real notifications will come from Supabase later
   const [notifications] = useState<Notification[]>([]);
 
   return (
     <div className="max-w-2xl mx-auto py-8 px-4">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-tc-text-primary">Notificações</h1>
+        <h1 className="text-2xl font-bold text-tc-text-primary">{t("notifications.title")}</h1>
         {notifications.length > 0 && (
           <button className="flex items-center gap-1.5 text-sm text-navy-500 hover:text-navy-600 font-medium transition-colors">
             <CheckCheck className="h-4 w-4" />
-            Marcar todas como lidas
+            {t("notifications.markAllRead")}
           </button>
         )}
       </div>
@@ -39,10 +41,10 @@ export default function Notifications() {
           <CardContent className="py-16 text-center">
             <Bell className="h-12 w-12 text-tc-text-hint mx-auto mb-4" />
             <p className="text-base font-medium text-tc-text-secondary mb-1">
-              Nenhuma notificacao
+              {t("notifications.none")}
             </p>
             <p className="text-sm text-tc-text-hint">
-              Quando houver novidades, elas aparecerão aqui
+              {t("notifications.noneDesc")}
             </p>
           </CardContent>
         </Card>

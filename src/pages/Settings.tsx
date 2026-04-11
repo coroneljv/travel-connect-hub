@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,14 +25,6 @@ import {
 
 type SettingsTab = "conta" | "notificacoes" | "seguranca" | "idioma" | "pagamento";
 
-const TABS: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
-  { key: "conta", label: "Conta", icon: <User className="h-4 w-4" /> },
-  { key: "notificacoes", label: "Notificações", icon: <Bell className="h-4 w-4" /> },
-  { key: "seguranca", label: "Segurança", icon: <Lock className="h-4 w-4" /> },
-  { key: "idioma", label: "Idioma", icon: <Globe className="h-4 w-4" /> },
-  { key: "pagamento", label: "Pagamento", icon: <CreditCard className="h-4 w-4" /> },
-];
-
 interface NotifPrefs {
   email: boolean;
   push: boolean;
@@ -44,6 +38,29 @@ interface LangPrefs {
 
 const DEFAULT_NOTIF_PREFS: NotifPrefs = { email: true, push: true, marketing: false };
 const DEFAULT_LANG_PREFS: LangPrefs = { language: "pt-BR", timezone: "America/Sao_Paulo" };
+
+// These are stored to DB — must stay as pt-BR values
+const LANGUAGE_KEYS = [
+  "Inglês", "Espanhol", "Alemão", "Português", "Francês", "Italiano",
+  "Mandarim", "Japonês", "Russo", "Árabe", "Holandês", "Coreano",
+];
+
+const SKILL_KEYS = [
+  "Ensino de inglês", "Atendimento ao Cliente", "Cozinhar", "Limpeza",
+  "Jardinagem", "Marketing Digital", "Construção", "Fotografia",
+  "Design", "Ensino", "Agricultura", "Cuidado de Animais",
+  "Manutenção", "Recepção", "Programação", "Música", "Arte",
+  "Esporte", "Primeiros Socorros", "Outros",
+];
+
+const REGION_KEYS = [
+  "América do Norte", "América Central", "América do Sul", "Europa Central",
+  "Europa Oriental", "Ásia", "Oceania", "África", "Oriente Médio", "Caribe",
+];
+
+const DURATION_KEYS = [
+  "1-2 semanas", "3-4 semanas", "1-3 meses", "3-6 meses", "+6 meses", "Flexível",
+];
 
 function loadJson<T>(key: string, fallback: T): T {
   try {
@@ -67,36 +84,16 @@ function formatPhone(raw: string): string {
   return `+${digits.slice(0, 2)} (${digits.slice(2, 4)}) ${digits.slice(4, 9)}-${digits.slice(9, 13)}`;
 }
 
-const LANGUAGES = [
-  "Inglês", "Espanhol", "Alemão", "Português", "Francês", "Italiano",
-  "Mandarim", "Japonês", "Russo", "Árabe", "Holandês", "Coreano",
-];
-
-const SKILLS = [
-  "Ensino de inglês", "Atendimento ao Cliente", "Cozinhar", "Limpeza",
-  "Jardinagem", "Marketing Digital", "Construção", "Fotografia",
-  "Design", "Ensino", "Agricultura", "Cuidado de Animais",
-  "Manutenção", "Recepção", "Programação", "Música", "Arte",
-  "Esporte", "Primeiros Socorros", "Outros",
-];
-
-const REGIONS = [
-  "América do Norte", "América Central", "América do Sul", "Europa Central",
-  "Europa Oriental", "Ásia", "Oceania", "África", "Oriente Médio", "Caribe",
-];
-
-const DURATIONS = [
-  "1-2 semanas", "3-4 semanas", "1-3 meses", "3-6 meses", "+6 meses", "Flexível",
-];
-
 function ChipSelect({
   options,
   selected,
   onChange,
+  getLabel,
 }: {
   options: string[];
   selected: string[];
   onChange: (val: string[]) => void;
+  getLabel?: (opt: string) => string;
 }) {
   const toggle = (v: string) =>
     onChange(selected.includes(v) ? selected.filter((x) => x !== v) : [...selected, v]);
@@ -113,7 +110,7 @@ function ChipSelect({
               : "bg-white border border-gray-300 text-tc-text-primary hover:border-gray-400"
           }`}
         >
-          {opt}
+          {getLabel ? getLabel(opt) : opt}
         </button>
       ))}
     </div>
@@ -121,8 +118,86 @@ function ChipSelect({
 }
 
 export default function Settings() {
+  const { t } = useTranslation();
   const { profile, user, uiRole, organization, signOut, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<SettingsTab>("conta");
+
+  // Label maps for chips (values stay pt-BR for DB, display is translated)
+  const langLabel = (v: string): string => ({
+    "Inglês": t("lists.languages.english"),
+    "Espanhol": t("lists.languages.spanish"),
+    "Alemão": t("lists.languages.german"),
+    "Português": t("lists.languages.portuguese"),
+    "Francês": t("lists.languages.french"),
+    "Italiano": t("lists.languages.italian"),
+    "Mandarim": t("lists.languages.mandarin"),
+    "Japonês": t("lists.languages.japanese"),
+    "Russo": t("lists.languages.russian"),
+    "Árabe": t("lists.languages.arabic"),
+    "Holandês": t("lists.languages.dutch"),
+    "Coreano": t("lists.languages.korean"),
+  }[v] ?? v);
+
+  const skillLabel = (v: string): string => ({
+    "Ensino de inglês": t("lists.skills.englishTeaching"),
+    "Atendimento ao Cliente": t("lists.skills.customerService"),
+    "Cozinhar": t("lists.skills.cooking"),
+    "Limpeza": t("lists.skills.cleaning"),
+    "Jardinagem": t("lists.skills.gardening"),
+    "Marketing Digital": t("lists.skills.digitalMarketing"),
+    "Construção": t("lists.skills.construction"),
+    "Fotografia": t("lists.skills.photography"),
+    "Design": t("lists.skills.design"),
+    "Ensino": t("lists.skills.teaching"),
+    "Agricultura": t("lists.skills.agriculture"),
+    "Cuidado de Animais": t("lists.skills.animalCare"),
+    "Manutenção": t("lists.skills.maintenance"),
+    "Recepção": t("lists.skills.reception"),
+    "Programação": t("lists.skills.programming"),
+    "Música": t("lists.skills.music"),
+    "Arte": t("lists.skills.art"),
+    "Esporte": t("lists.skills.sports"),
+    "Primeiros Socorros": t("lists.skills.firstAid"),
+    "Outros": t("lists.skills.others"),
+  }[v] ?? v);
+
+  const regionLabel = (v: string): string => ({
+    "América do Norte": t("lists.regions.northAmerica"),
+    "América Central": t("lists.regions.centralAmerica"),
+    "América do Sul": t("lists.regions.southAmerica"),
+    "Europa Central": t("lists.regions.centralEurope"),
+    "Europa Oriental": t("lists.regions.easternEurope"),
+    "Ásia": t("lists.regions.asia"),
+    "Oceania": t("lists.regions.oceania"),
+    "África": t("lists.regions.africa"),
+    "Oriente Médio": t("lists.regions.middleEast"),
+    "Caribe": t("lists.regions.caribbean"),
+  }[v] ?? v);
+
+  const durationLabel = (v: string): string => ({
+    "1-2 semanas": t("lists.durations.1-2weeks"),
+    "3-4 semanas": t("lists.durations.3-4weeks"),
+    "1-3 meses": t("lists.durations.1-3months"),
+    "3-6 meses": t("lists.durations.3-6months"),
+    "+6 meses": t("lists.durations.6plus"),
+    "Flexível": t("lists.durations.flexible"),
+  }[v] ?? v);
+
+  const TABS: { key: SettingsTab; icon: React.ReactNode }[] = [
+    { key: "conta", icon: <User className="h-4 w-4" /> },
+    { key: "notificacoes", icon: <Bell className="h-4 w-4" /> },
+    { key: "seguranca", icon: <Lock className="h-4 w-4" /> },
+    { key: "idioma", icon: <Globe className="h-4 w-4" /> },
+    { key: "pagamento", icon: <CreditCard className="h-4 w-4" /> },
+  ];
+
+  const TAB_LABELS: Record<SettingsTab, string> = {
+    conta: t("settings.tabs.account"),
+    notificacoes: t("settings.tabs.notifications"),
+    seguranca: t("settings.tabs.security"),
+    idioma: t("settings.tabs.language"),
+    pagamento: t("settings.tabs.payment"),
+  };
 
   // --- Conta ---
   const [fullName, setFullName] = useState("");
@@ -209,9 +284,9 @@ export default function Settings() {
       if (error) throw error;
       setAvatarUrl(url);
       await refreshProfile();
-      toast.success("Foto atualizada!");
+      toast.success(t("settings.toasts.photoUpdated"));
     } catch (err: any) {
-      toast.error(err.message ?? "Erro ao enviar foto.");
+      toast.error(err.message ?? t("settings.toasts.photoError"));
     } finally {
       setUploadingAvatar(false);
     }
@@ -240,9 +315,9 @@ export default function Settings() {
         .eq("id", profile.id);
       if (error) throw error;
       await refreshProfile();
-      toast.success("Dados atualizados com sucesso!");
+      toast.success(t("settings.toasts.dataSaved"));
     } catch (err: any) {
-      toast.error(err.message ?? "Erro ao salvar alterações.");
+      toast.error(err.message ?? t("settings.toasts.dataSaveError"));
     } finally {
       setSavingProfile(false);
     }
@@ -261,7 +336,7 @@ export default function Settings() {
 
   const handleSaveNotif = () => {
     localStorage.setItem("tc_notif_prefs", JSON.stringify(notifPrefs));
-    toast.success("Preferências de notificação salvas!");
+    toast.success(t("settings.toasts.notifSaved"));
   };
 
   // --- Seguranca ---
@@ -271,22 +346,22 @@ export default function Settings() {
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) {
-      toast.error("A senha deve ter no mínimo 6 caracteres.");
+      toast.error(t("settings.security.passwordHint"));
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("As senhas não coincidem.");
+      toast.error(t("settings.security.passwordMismatch"));
       return;
     }
     setSavingPassword(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      toast.success("Senha alterada com sucesso!");
+      toast.success(t("settings.security.passwordChanged"));
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      toast.error(err.message ?? "Erro ao alterar senha.");
+      toast.error(err.message ?? t("settings.security.passwordError"));
     } finally {
       setSavingPassword(false);
     }
@@ -301,12 +376,13 @@ export default function Settings() {
 
   const handleSaveLang = () => {
     localStorage.setItem("tc_lang_prefs", JSON.stringify(langPrefs));
-    toast.success("Preferências de idioma salvas!");
+    i18n.changeLanguage(langPrefs.language);
+    toast.success(t("settings.toasts.langSaved"));
   };
 
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
-      <h1 className="text-2xl font-bold text-tc-text-primary mb-6">Configurações</h1>
+      <h1 className="text-2xl font-bold text-tc-text-primary mb-6">{t("settings.title")}</h1>
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Sidebar tabs */}
@@ -323,7 +399,7 @@ export default function Settings() {
                 }`}
               >
                 {tab.icon}
-                {tab.label}
+                {TAB_LABELS[tab.key]}
               </button>
             ))}
             <button
@@ -331,7 +407,7 @@ export default function Settings() {
               className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-rose-600 hover:bg-rose-50 transition-colors text-left mt-4"
             >
               <LogOut className="h-4 w-4" />
-              Sair
+              {t("common.logout")}
             </button>
           </nav>
         </div>
@@ -342,7 +418,7 @@ export default function Settings() {
           {activeTab === "conta" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Informações da Conta</CardTitle>
+                <CardTitle className="text-lg">{t("settings.account.title")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Avatar */}
@@ -379,22 +455,22 @@ export default function Settings() {
                     />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">Foto de Perfil</p>
-                    <p className="text-xs text-tc-text-hint">JPG, PNG. Recomendado 200x200px.</p>
+                    <p className="text-sm font-medium">{t("settings.account.profilePhoto")}</p>
+                    <p className="text-xs text-tc-text-hint">{t("settings.account.photoHint")}</p>
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="name">Nome completo</Label>
+                  <Label htmlFor="name">{t("settings.account.fullName")}</Label>
                   <Input
                     id="name"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Seu nome"
+                    placeholder={t("settings.account.fullNamePlaceholder")}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email">E-mail</Label>
+                  <Label htmlFor="email">{t("settings.account.email")}</Label>
                   <Input
                     id="email"
                     value={user?.email ?? ""}
@@ -402,21 +478,21 @@ export default function Settings() {
                     className="bg-gray-50"
                   />
                   <p className="text-xs text-tc-text-hint mt-1">
-                    O e-mail não pode ser alterado por aqui.
+                    {t("settings.account.emailHint")}
                   </p>
                 </div>
                 <div>
-                  <Label htmlFor="phone">Telefone</Label>
+                  <Label htmlFor="phone">{t("settings.account.phone")}</Label>
                   <Input
                     id="phone"
                     value={formatPhone(phone)}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-                    placeholder="+55 (48) 99999-9999"
+                    placeholder={t("settings.account.phonePlaceholder")}
                     maxLength={19}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dob">Data de nascimento</Label>
+                  <Label htmlFor="dob">{t("settings.account.birthDate")}</Label>
                   <Input
                     id="dob"
                     type="date"
@@ -425,48 +501,48 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="nationality">Nacionalidade</Label>
+                  <Label htmlFor="nationality">{t("settings.account.nationality")}</Label>
                   <Input
                     id="nationality"
                     value={nationality}
                     onChange={(e) => setNationality(e.target.value)}
-                    placeholder="Ex: Brasileira"
+                    placeholder={t("settings.account.nationalityPlaceholder")}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="passport">País do passaporte</Label>
+                  <Label htmlFor="passport">{t("settings.account.passportCountry")}</Label>
                   <Input
                     id="passport"
                     value={passportCountry}
                     onChange={(e) => setPassportCountry(e.target.value)}
-                    placeholder="Ex: Brasil"
+                    placeholder={t("settings.account.passportCountryPlaceholder")}
                   />
                 </div>
                 <div>
-                  <Label htmlFor="travel-style">Estilo de viagem</Label>
+                  <Label htmlFor="travel-style">{t("settings.account.travelStyle")}</Label>
                   <select
                     id="travel-style"
                     className="w-full mt-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm"
                     value={travelStyle}
                     onChange={(e) => setTravelStyle(e.target.value)}
                   >
-                    <option value="">Selecione...</option>
-                    <option value="Mochileiro">Mochileiro</option>
-                    <option value="Voluntario">Voluntário</option>
-                    <option value="Nomade Digital">Nômade Digital</option>
-                    <option value="Aventureiro">Aventureiro</option>
-                    <option value="Cultural">Cultural</option>
-                    <option value="Ecologico">Ecológico</option>
-                    <option value="Luxo">Luxo</option>
+                    <option value="">{t("settings.account.selectPlaceholder")}</option>
+                    <option value="Mochileiro">{t("settings.account.travelStyles.backpacker")}</option>
+                    <option value="Voluntario">{t("settings.account.travelStyles.volunteer")}</option>
+                    <option value="Nomade Digital">{t("settings.account.travelStyles.digitalNomad")}</option>
+                    <option value="Aventureiro">{t("settings.account.travelStyles.adventurer")}</option>
+                    <option value="Cultural">{t("settings.account.travelStyles.cultural")}</option>
+                    <option value="Ecologico">{t("settings.account.travelStyles.ecological")}</option>
+                    <option value="Luxo">{t("settings.account.travelStyles.luxury")}</option>
                   </select>
                 </div>
                 <div>
-                  <Label htmlFor="bio">Bio</Label>
+                  <Label htmlFor="bio">{t("settings.account.bio")}</Label>
                   <Textarea
                     id="bio"
                     value={bio}
                     onChange={(e) => setBio(e.target.value)}
-                    placeholder="Conte um pouco sobre você..."
+                    placeholder={t("settings.account.bioPlaceholder")}
                     rows={4}
                   />
                 </div>
@@ -475,42 +551,42 @@ export default function Settings() {
                 {uiRole === "viajante" && (
                   <>
                     <div className="border-t pt-4 mt-4">
-                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">Idiomas</h3>
-                      <ChipSelect options={LANGUAGES} selected={languages} onChange={setLanguages} />
+                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">{t("settings.account.languages")}</h3>
+                      <ChipSelect options={LANGUAGE_KEYS} selected={languages} onChange={setLanguages} getLabel={langLabel} />
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">Habilidades</h3>
-                      <ChipSelect options={SKILLS} selected={skills} onChange={setSkills} />
+                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">{t("settings.account.skills")}</h3>
+                      <ChipSelect options={SKILL_KEYS} selected={skills} onChange={setSkills} getLabel={skillLabel} />
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">Regiões de Interesse</h3>
-                      <ChipSelect options={REGIONS} selected={regions} onChange={setRegions} />
+                      <h3 className="text-sm font-semibold text-tc-text-primary mb-3">{t("settings.account.regions")}</h3>
+                      <ChipSelect options={REGION_KEYS} selected={regions} onChange={setRegions} getLabel={regionLabel} />
                     </div>
 
                     <div>
-                      <Label htmlFor="preferred-duration">Duração Preferida</Label>
+                      <Label htmlFor="preferred-duration">{t("settings.account.preferredDuration")}</Label>
                       <select
                         id="preferred-duration"
                         className="w-full mt-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm"
                         value={preferredDuration}
                         onChange={(e) => setPreferredDuration(e.target.value)}
                       >
-                        <option value="">Selecione...</option>
-                        {DURATIONS.map((d) => (
-                          <option key={d} value={d}>{d}</option>
+                        <option value="">{t("settings.account.selectPlaceholder")}</option>
+                        {DURATION_KEYS.map((d) => (
+                          <option key={d} value={d}>{durationLabel(d)}</option>
                         ))}
                       </select>
                     </div>
 
                     <div>
-                      <Label htmlFor="add-prefs">Preferências Adicionais</Label>
+                      <Label htmlFor="add-prefs">{t("settings.account.additionalPrefs")}</Label>
                       <Textarea
                         id="add-prefs"
                         value={additionalPreferences}
                         onChange={(e) => setAdditionalPreferences(e.target.value)}
-                        placeholder="Alguma preferência ou necessidade especial?"
+                        placeholder={t("settings.account.additionalPrefsPlaceholder")}
                         rows={3}
                       />
                     </div>
@@ -519,7 +595,7 @@ export default function Settings() {
 
                 <Button onClick={handleSaveProfile} disabled={savingProfile}>
                   {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Salvar Alterações
+                  {t("settings.account.saveChanges")}
                 </Button>
 
                 {/* Anfitrião organization card */}
@@ -527,45 +603,45 @@ export default function Settings() {
                   <div className="border-t pt-6 mt-6 space-y-4">
                     <h3 className="text-lg font-semibold text-tc-text-primary flex items-center gap-2">
                       <Building2 className="h-5 w-5" />
-                      Dados da Organização
+                      {t("settings.organization.title")}
                     </h3>
                     <div>
-                      <Label htmlFor="org-name">Nome da Organização</Label>
+                      <Label htmlFor="org-name">{t("settings.organization.name")}</Label>
                       <Input
                         id="org-name"
                         value={orgName}
                         onChange={(e) => setOrgName(e.target.value)}
-                        placeholder="Nome da organização"
+                        placeholder={t("settings.organization.namePlaceholder")}
                       />
                     </div>
                     <div>
-                      <Label htmlFor="org-description">Descrição</Label>
+                      <Label htmlFor="org-description">{t("settings.organization.description")}</Label>
                       <Textarea
                         id="org-description"
                         value={orgDescription}
                         onChange={(e) => setOrgDescription(e.target.value)}
-                        placeholder="Descreva sua organização..."
+                        placeholder={t("settings.organization.descriptionPlaceholder")}
                         rows={3}
                       />
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="org-country">País</Label>
-                        <Input id="org-country" value={orgCountry} onChange={(e) => setOrgCountry(e.target.value)} placeholder="País" />
+                        <Label htmlFor="org-country">{t("settings.organization.country")}</Label>
+                        <Input id="org-country" value={orgCountry} onChange={(e) => setOrgCountry(e.target.value)} placeholder={t("settings.organization.country")} />
                       </div>
                       <div>
-                        <Label htmlFor="org-website">Website</Label>
-                        <Input id="org-website" value={orgWebsite} onChange={(e) => setOrgWebsite(e.target.value)} placeholder="https://..." />
+                        <Label htmlFor="org-website">{t("settings.organization.website")}</Label>
+                        <Input id="org-website" value={orgWebsite} onChange={(e) => setOrgWebsite(e.target.value)} placeholder={t("settings.organization.websitePlaceholder")} />
                       </div>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="org-email">E-mail da Organização</Label>
-                        <Input id="org-email" type="email" value={orgEmail} onChange={(e) => setOrgEmail(e.target.value)} placeholder="contato@org.com" />
+                        <Label htmlFor="org-email">{t("settings.organization.email")}</Label>
+                        <Input id="org-email" type="email" value={orgEmail} onChange={(e) => setOrgEmail(e.target.value)} placeholder={t("settings.organization.emailPlaceholder")} />
                       </div>
                       <div>
-                        <Label htmlFor="org-phone">Telefone da Organização</Label>
-                        <Input id="org-phone" value={formatPhone(orgPhone)} onChange={(e) => setOrgPhone(e.target.value.replace(/\D/g, ""))} placeholder="+55 (48) 99999-9999" />
+                        <Label htmlFor="org-phone">{t("settings.organization.phone")}</Label>
+                        <Input id="org-phone" value={formatPhone(orgPhone)} onChange={(e) => setOrgPhone(e.target.value.replace(/\D/g, ""))} placeholder={t("settings.organization.phonePlaceholder")} />
                       </div>
                     </div>
                     <Button
@@ -586,9 +662,9 @@ export default function Settings() {
                             .eq("id", organization.id);
                           if (error) throw error;
                           await refreshProfile();
-                          toast.success("Dados da organização atualizados!");
+                          toast.success(t("settings.toasts.orgSaved"));
                         } catch (err: any) {
-                          toast.error(err.message ?? "Erro ao salvar organização.");
+                          toast.error(err.message ?? t("settings.toasts.orgSaveError"));
                         } finally {
                           setSavingOrg(false);
                         }
@@ -596,7 +672,7 @@ export default function Settings() {
                       disabled={savingOrg}
                     >
                       {savingOrg && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                      Salvar Organização
+                      {t("settings.organization.save")}
                     </Button>
                   </div>
                 )}
@@ -608,16 +684,16 @@ export default function Settings() {
           {activeTab === "notificacoes" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Preferências de Notificação</CardTitle>
+                <CardTitle className="text-lg">{t("settings.notifications.title")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-tc-text-primary">
-                      Notificações por e-mail
+                      {t("settings.notifications.emailNotif")}
                     </p>
                     <p className="text-xs text-tc-text-hint">
-                      Receba atualizações sobre candidaturas e mensagens
+                      {t("settings.notifications.emailNotifDesc")}
                     </p>
                   </div>
                   <Switch
@@ -628,10 +704,10 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-tc-text-primary">
-                      Notificações push
+                      {t("settings.notifications.pushNotif")}
                     </p>
                     <p className="text-xs text-tc-text-hint">
-                      Receba alertas no navegador
+                      {t("settings.notifications.pushNotifDesc")}
                     </p>
                   </div>
                   <Switch
@@ -642,10 +718,10 @@ export default function Settings() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-tc-text-primary">
-                      E-mails de marketing
+                      {t("settings.notifications.marketingEmails")}
                     </p>
                     <p className="text-xs text-tc-text-hint">
-                      Novidades, dicas e promoções
+                      {t("settings.notifications.marketingEmailsDesc")}
                     </p>
                   </div>
                   <Switch
@@ -653,7 +729,7 @@ export default function Settings() {
                     onCheckedChange={(v) => updateNotif("marketing", v)}
                   />
                 </div>
-                <Button onClick={handleSaveNotif}>Salvar Preferências</Button>
+                <Button onClick={handleSaveNotif}>{t("settings.notifications.savePreferences")}</Button>
               </CardContent>
             </Card>
           )}
@@ -662,11 +738,11 @@ export default function Settings() {
           {activeTab === "seguranca" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Segurança</CardTitle>
+                <CardTitle className="text-lg">{t("settings.security.title")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="new-pw">Nova senha</Label>
+                  <Label htmlFor="new-pw">{t("settings.security.newPassword")}</Label>
                   <Input
                     id="new-pw"
                     type="password"
@@ -676,7 +752,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="confirm-pw">Confirmar nova senha</Label>
+                  <Label htmlFor="confirm-pw">{t("settings.security.confirmPassword")}</Label>
                   <Input
                     id="confirm-pw"
                     type="password"
@@ -687,7 +763,7 @@ export default function Settings() {
                 </div>
                 <Button onClick={handleChangePassword} disabled={savingPassword}>
                   {savingPassword && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Alterar Senha
+                  {t("settings.security.changePassword")}
                 </Button>
               </CardContent>
             </Card>
@@ -697,11 +773,11 @@ export default function Settings() {
           {activeTab === "idioma" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Idioma e Região</CardTitle>
+                <CardTitle className="text-lg">{t("settings.language.title")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Idioma</Label>
+                  <Label>{t("settings.language.language")}</Label>
                   <select
                     className="w-full mt-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm"
                     value={langPrefs.language}
@@ -709,13 +785,13 @@ export default function Settings() {
                       setLangPrefs((prev) => ({ ...prev, language: e.target.value }))
                     }
                   >
-                    <option value="pt-BR">Português (Brasil)</option>
-                    <option value="en">English</option>
-                    <option value="es">Español</option>
+                    <option value="pt-BR">{t("settings.language.options.ptBR")}</option>
+                    <option value="en">{t("settings.language.options.en")}</option>
+                    <option value="es">{t("settings.language.options.es")}</option>
                   </select>
                 </div>
                 <div>
-                  <Label>Fuso horário</Label>
+                  <Label>{t("settings.language.timezone")}</Label>
                   <select
                     className="w-full mt-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm"
                     value={langPrefs.timezone}
@@ -723,14 +799,14 @@ export default function Settings() {
                       setLangPrefs((prev) => ({ ...prev, timezone: e.target.value }))
                     }
                   >
-                    <option value="America/Sao_Paulo">Brasília (GMT-3)</option>
-                    <option value="America/New_York">New York (GMT-5)</option>
-                    <option value="Europe/London">London (GMT+0)</option>
-                    <option value="Europe/Lisbon">Lisboa (GMT+0)</option>
-                    <option value="Asia/Tokyo">Tokyo (GMT+9)</option>
+                    <option value="America/Sao_Paulo">{t("settings.language.timezones.saoPaulo")}</option>
+                    <option value="America/New_York">{t("settings.language.timezones.newYork")}</option>
+                    <option value="Europe/London">{t("settings.language.timezones.london")}</option>
+                    <option value="Europe/Lisbon">{t("settings.language.timezones.lisbon")}</option>
+                    <option value="Asia/Tokyo">{t("settings.language.timezones.tokyo")}</option>
                   </select>
                 </div>
-                <Button onClick={handleSaveLang}>Salvar</Button>
+                <Button onClick={handleSaveLang}>{t("settings.language.save")}</Button>
               </CardContent>
             </Card>
           )}
@@ -739,7 +815,7 @@ export default function Settings() {
           {activeTab === "pagamento" && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Métodos de Pagamento</CardTitle>
+                <CardTitle className="text-lg">{t("settings.payment.title")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-center py-12">
@@ -747,11 +823,10 @@ export default function Settings() {
                     <Clock className="h-7 w-7 text-navy-500" />
                   </div>
                   <p className="text-base font-medium text-tc-text-primary mb-1">
-                    Em breve
+                    {t("common.comingSoon")}
                   </p>
                   <p className="text-sm text-tc-text-secondary max-w-xs mx-auto">
-                    Estamos preparando a integração com meios de pagamento. Você será
-                    notificado quando estiver disponível.
+                    {t("settings.payment.comingSoonDesc")}
                   </p>
                 </div>
               </CardContent>

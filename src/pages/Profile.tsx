@@ -18,6 +18,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { dbRoleToUIRole } from "@/lib/roles";
+import { useTranslation } from "react-i18next";
 
 function formatPhone(raw: string): string {
   const digits = raw.replace(/\D/g, "");
@@ -30,6 +31,7 @@ function formatPhone(raw: string): string {
 }
 
 const Profile = () => {
+  const { t } = useTranslation();
   const { organization, profile, userRole, user, refreshProfile } = useAuth();
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -72,9 +74,9 @@ const Profile = () => {
         .eq("id", profile.id);
       if (error) throw error;
       await refreshProfile();
-      toast.success("Foto atualizada!");
+      toast.success(t("profile.toasts.photoUpdated"));
     } catch (err: any) {
-      toast.error(err.message ?? "Erro ao enviar foto.");
+      toast.error(err.message ?? t("profile.toasts.photoError"));
     } finally {
       setUploadingAvatar(false);
     }
@@ -85,50 +87,18 @@ const Profile = () => {
     : null;
 
   const infoItems = [
-    {
-      icon: Mail,
-      label: "E-mail",
-      value: user?.email,
-    },
-    {
-      icon: Phone,
-      label: "Telefone",
-      value: profile?.phone ? formatPhone(profile.phone) : null,
-    },
-    {
-      icon: Calendar,
-      label: "Data de nascimento",
-      value: formattedDate,
-    },
-    {
-      icon: Globe,
-      label: "Nacionalidade",
-      value: profile?.nationality,
-    },
-    {
-      icon: FileText,
-      label: "País do passaporte",
-      value: profile?.passport_country,
-    },
-    {
-      icon: Plane,
-      label: "Estilo de viagem",
-      value: profile?.travel_style,
-    },
+    { icon: Mail,     label: t("profile.email"),         value: user?.email },
+    { icon: Phone,    label: t("profile.phone"),         value: profile?.phone ? formatPhone(profile.phone) : null },
+    { icon: Calendar, label: t("profile.birthDate"),     value: formattedDate },
+    { icon: Globe,    label: t("profile.nationality"),   value: profile?.nationality },
+    { icon: FileText, label: t("profile.passportCountry"), value: profile?.passport_country },
+    { icon: Plane,    label: t("profile.travelStyle"),   value: profile?.travel_style },
   ];
 
   if (organization) {
     infoItems.push(
-      {
-        icon: MapPin,
-        label: "Organização",
-        value: organization.name,
-      },
-      {
-        icon: Globe,
-        label: "País",
-        value: organization.country,
-      }
+      { icon: MapPin, label: t("profile.organization"), value: organization.name },
+      { icon: Globe,  label: t("profile.country"),      value: organization.country }
     );
   }
 
@@ -136,14 +106,14 @@ const Profile = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Meu Perfil</h1>
+          <h1 className="text-2xl font-bold tracking-tight">{t("profile.title")}</h1>
           <p className="text-sm text-tc-text-secondary mt-1">
-            Suas informações pessoais e de conta.
+            {t("profile.subtitle")}
           </p>
         </div>
         <Link to="/settings">
           <Button variant="outline" size="sm">
-            Editar Perfil
+            {t("profile.editProfile")}
           </Button>
         </Link>
       </div>
@@ -204,7 +174,7 @@ const Profile = () => {
       <Card>
         <CardContent className="p-6">
           <h3 className="text-sm font-semibold text-tc-text-heading uppercase tracking-wide mb-4">
-            Informações
+            {t("profile.information")}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {infoItems.map((item) => (
@@ -218,7 +188,7 @@ const Profile = () => {
                   <p className="text-sm font-medium text-tc-text-primary">
                     {item.value || (
                       <span className="text-tc-text-hint font-normal">
-                        Não informado
+                        {t("common.notProvided")}
                       </span>
                     )}
                   </p>
@@ -234,7 +204,7 @@ const Profile = () => {
         <Card>
           <CardContent className="p-6">
             <h3 className="text-sm font-semibold text-tc-text-heading uppercase tracking-wide mb-2">
-              Sobre a Organização
+              {t("profile.aboutOrg")}
             </h3>
             <p className="text-sm text-tc-text-secondary leading-relaxed">
               {organization.description}

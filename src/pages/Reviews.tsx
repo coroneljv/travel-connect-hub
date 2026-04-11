@@ -3,6 +3,7 @@ import { Star, ThumbsUp, MessageSquare, Edit3, MapPin, Calendar, Clock } from "l
 import ReviewModal from "@/components/modals/ReviewModal";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTranslation } from "react-i18next";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -36,7 +37,7 @@ interface MappedReview {
   date: string;
   duration?: string;
   overallRating: number;
-  categories: { name: string; rating: number }[];
+  categories: { key: string; rating: number }[];
   text: string;
   wouldReturn?: boolean;
   strengths?: string[];
@@ -47,15 +48,15 @@ function mapReviewRow(row: ReviewRow, isReceived: boolean): MappedReview {
   const name = profile?.full_name ?? "Usuário";
   const avatar = profile?.avatar_url ?? `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=364763&color=fff&size=96`;
 
-  const categories: { name: string; rating: number }[] = [];
-  if (row.communication_rating) categories.push({ name: "Comunicação", rating: row.communication_rating });
-  if (row.quality_rating) categories.push({ name: "Qualidade", rating: row.quality_rating });
-  if (row.reliability_rating) categories.push({ name: "Confiabilidade", rating: row.reliability_rating });
-  if (row.teamwork_rating) categories.push({ name: "Trabalho em Equipe", rating: row.teamwork_rating });
-  if (row.proactivity_rating) categories.push({ name: "Iniciativa", rating: row.proactivity_rating });
+  const categories: { key: string; rating: number }[] = [];
+  if (row.communication_rating) categories.push({ key: "communication", rating: row.communication_rating });
+  if (row.quality_rating) categories.push({ key: "quality", rating: row.quality_rating });
+  if (row.reliability_rating) categories.push({ key: "reliability", rating: row.reliability_rating });
+  if (row.teamwork_rating) categories.push({ key: "teamwork", rating: row.teamwork_rating });
+  if (row.proactivity_rating) categories.push({ key: "initiative", rating: row.proactivity_rating });
 
   const createdAt = row.created_at ? new Date(row.created_at) : new Date();
-  const dateStr = createdAt.toLocaleDateString("pt-BR");
+  const dateStr = createdAt.toLocaleDateString();
 
   return {
     id: row.id,
@@ -107,6 +108,7 @@ function CategoryBadge({ name, rating }: { name: string; rating: number }) {
 // ---------------------------------------------------------------------------
 
 export default function Reviews() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<"received" | "my">("received");
   const [showReviewModal, setShowReviewModal] = useState(false);
   const { user } = useAuth();
@@ -115,13 +117,23 @@ export default function Reviews() {
   const [myReviews, setMyReviews] = useState<MappedReview[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const categoryLabel = (key: string): string => {
+    const labels: Record<string, string> = {
+      communication: t("reviews.categories.communication"),
+      quality: t("reviews.categories.quality"),
+      reliability: t("reviews.categories.reliability"),
+      teamwork: t("reviews.categories.teamwork"),
+      initiative: t("reviews.categories.initiative"),
+    };
+    return labels[key] ?? key;
+  };
+
   useEffect(() => {
     if (!user) return;
 
     async function fetchReviews() {
       setLoading(true);
 
-      // Reviews received (where I am reviewed_id)
       const { data: received } = await supabase
         .from("reviews")
         .select("*, reviewer_profile:profiles!reviews_reviewer_id_fkey(full_name, avatar_url, position), request:requests!reviews_request_id_fkey(title, destination)")
@@ -129,7 +141,6 @@ export default function Reviews() {
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
-      // Reviews given (where I am reviewer_id)
       const { data: given } = await supabase
         .from("reviews")
         .select("*, reviewed_profile:profiles!reviews_reviewed_id_fkey(full_name, avatar_url, position), request:requests!reviews_request_id_fkey(title, destination)")
@@ -159,19 +170,19 @@ export default function Reviews() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-bold text-tc-text-primary">Avaliações</h1>
+        <h1 className="text-lg font-bold text-tc-text-primary">{t("reviews.title")}</h1>
         <p className="text-sm text-tc-text-hint">
-          Veja suas avaliações e avalie viajantes
+          {t("reviews.subtitle")}
         </p>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Avaliação Média", value: stats.averageRating, Icon: Star, color: "text-amber-500" },
-          { label: "Recebidas", value: stats.received, Icon: ThumbsUp, color: "text-navy-500" },
-          { label: "Feitas", value: stats.given, Icon: MessageSquare, color: "text-navy-500" },
-          { label: "Pendentes", value: stats.pending, Icon: Edit3, color: "text-navy-500" },
+          { label: t("reviews.avgRating"), value: stats.averageRating, Icon: Star, color: "text-amber-500" },
+          { label: t("reviews.tabs.received"), value: stats.received, Icon: ThumbsUp, color: "text-navy-500" },
+          { label: t("reviews.tabs.given"), value: stats.given, Icon: MessageSquare, color: "text-navy-500" },
+          { label: t("reviews.tabs.pending"), value: stats.pending, Icon: Edit3, color: "text-navy-500" },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -198,7 +209,7 @@ export default function Reviews() {
           }`}
         >
           <ThumbsUp className="h-4 w-4" />
-          Recebidas
+          {t("reviews.tabs.received")}
         </button>
         <button
           type="button"
@@ -210,19 +221,19 @@ export default function Reviews() {
           }`}
         >
           <Edit3 className="h-4 w-4" />
-          Minhas Avaliações
+          {t("reviews.myReviews")}
         </button>
       </div>
 
       {/* Review cards */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 bg-white border border-border rounded-lg">
-          <p className="text-tc-text-hint text-sm">Carregando avaliações...</p>
+          <p className="text-tc-text-hint text-sm">{t("reviews.loading")}</p>
         </div>
       ) : activeTab === "received" ? (
         receivedReviews.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white border border-border rounded-lg">
-            <p className="text-tc-text-hint text-sm">Nenhuma avaliação recebida</p>
+            <p className="text-tc-text-hint text-sm">{t("reviews.noReceived")}</p>
           </div>
         ) : (
         <div className="space-y-4">
@@ -249,18 +260,18 @@ export default function Reviews() {
                 </div>
                 <div className="text-right">
                   <StarsDisplay rating={review.overallRating} />
-                  <p className="text-xs text-tc-text-hint mt-1">{review.overallRating} de 5.0</p>
+                  <p className="text-xs text-tc-text-hint mt-1">{review.overallRating} {t("reviews.outOf")}</p>
                 </div>
               </div>
 
               {/* Categories */}
               <div>
                 <p className="text-xs font-semibold text-tc-text-primary mb-2">
-                  Avaliação por Categoria
+                  {t("reviews.byCategory")}
                 </p>
                 <div className="flex gap-2 flex-wrap">
                   {review.categories.map((cat) => (
-                    <CategoryBadge key={cat.name} name={cat.name} rating={cat.rating} />
+                    <CategoryBadge key={cat.key} name={categoryLabel(cat.key)} rating={cat.rating} />
                   ))}
                 </div>
               </div>
@@ -274,7 +285,7 @@ export default function Reviews() {
               {review.wouldReturn && (
                 <p className="text-xs text-emerald-600 font-medium flex items-center gap-1">
                   <ThumbsUp className="h-3.5 w-3.5" />
-                  Retornaria a este anfitrião
+                  {t("reviews.categories.wouldReturn")}
                 </p>
               )}
             </div>
@@ -284,7 +295,7 @@ export default function Reviews() {
       ) : (
         myReviews.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 bg-white border border-border rounded-lg">
-            <p className="text-tc-text-hint text-sm">Nenhuma avaliação feita</p>
+            <p className="text-tc-text-hint text-sm">{t("reviews.noGiven")}</p>
           </div>
         ) : (
         <div className="space-y-4">
@@ -315,18 +326,18 @@ export default function Reviews() {
                 </div>
                 <div className="text-right">
                   <StarsDisplay rating={review.overallRating} />
-                  <p className="text-xs text-tc-text-hint mt-1">{review.overallRating} de 5.0</p>
+                  <p className="text-xs text-tc-text-hint mt-1">{review.overallRating} {t("reviews.outOf")}</p>
                 </div>
               </div>
 
               {/* Categories */}
               <div>
                 <p className="text-xs font-semibold text-tc-text-primary mb-2">
-                  Avaliação por Categoria
+                  {t("reviews.byCategory")}
                 </p>
                 <div className="flex gap-2 flex-wrap">
                   {review.categories.map((cat) => (
-                    <CategoryBadge key={cat.name} name={cat.name} rating={cat.rating} />
+                    <CategoryBadge key={cat.key} name={categoryLabel(cat.key)} rating={cat.rating} />
                   ))}
                 </div>
               </div>

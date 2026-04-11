@@ -6,10 +6,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import ApplicationCard from "./ApplicationCard";
+import { useTranslation } from "react-i18next";
 
 const PAGE_SIZE = 10;
 
 export default function Applications() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [page, setPage] = useState(0);
 
@@ -22,7 +24,7 @@ export default function Applications() {
   } = useQuery({
     queryKey: ["my-applications", user?.id, page],
     queryFn: async () => {
-      if (!user?.id) throw new Error("Não autenticado");
+      if (!user?.id) throw new Error(t("applications.notAuthenticated"));
 
       const from = page * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
@@ -56,10 +58,10 @@ export default function Applications() {
       {/* Page Header */}
       <div>
         <h1 className="text-base font-medium text-tc-text-primary">
-          Minhas Candidaturas
+          {t("applications.title")}
         </h1>
         <p className="text-sm text-tc-text-hint">
-          Acompanhe o status das suas candidaturas
+          {t("applications.subtitle")}
         </p>
       </div>
 
@@ -84,31 +86,30 @@ export default function Applications() {
       ) : isError ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4">
           <h2 className="text-xl font-semibold text-destructive">
-            Erro ao carregar
+            {t("applications.loadError")}
           </h2>
           <p className="text-tc-text-hint">
-            {(error as Error)?.message || "Tente novamente mais tarde."}
+            {(error as Error)?.message || t("applications.loadErrorDesc")}
           </p>
           <Button variant="outline" onClick={() => refetch()}>
-            Tentar novamente
+            {t("common.tryAgain")}
           </Button>
         </div>
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 space-y-4 bg-white border border-border rounded-md">
           <FileText className="h-12 w-12 text-tc-text-placeholder" />
           <h2 className="text-base font-medium text-tc-text-primary">
-            Nenhuma candidatura ainda
+            {t("applications.none")}
           </h2>
           <p className="text-sm text-tc-text-hint text-center max-w-md">
-            Quando você se candidatar a uma oportunidade, ela aparecerá aqui
-            para você acompanhar o status.
+            {t("applications.noneDesc")}
           </p>
         </div>
       ) : (
         <>
           {/* Count */}
           <p className="text-sm text-tc-text-hint">
-            {total} candidatura{total !== 1 ? "s" : ""}
+            {t("applications.count", { count: total })}
           </p>
 
           {/* List */}
@@ -140,10 +141,10 @@ export default function Applications() {
                 disabled={page === 0}
                 onClick={() => setPage((p) => p - 1)}
               >
-                Anterior
+                {t("common.previous")}
               </Button>
               <span className="text-sm text-tc-text-secondary">
-                {page + 1} de {totalPages}
+                {t("applications.pageOf", { page: page + 1, total: totalPages })}
               </span>
               <Button
                 variant="outline"
@@ -151,7 +152,7 @@ export default function Applications() {
                 disabled={page >= totalPages - 1}
                 onClick={() => setPage((p) => p + 1)}
               >
-                Próxima
+                {t("common.next")}
               </Button>
             </div>
           )}
