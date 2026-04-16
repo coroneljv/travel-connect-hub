@@ -21,6 +21,7 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import CreatePostModal from "@/components/modals/CreatePostModal";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,37 +35,12 @@ import { toast } from "sonner";
 type TabKey = "feed" | "viajantes" | "anfitrioes";
 
 // ---------------------------------------------------------------------------
-// Filter options (not user data)
+// Filter option keys (stable pt-BR keys used as identifiers)
 // ---------------------------------------------------------------------------
 
-const SKILL_FILTERS = [
-  "Todos",
-  "Ensino",
-  "Agricultura",
-  "Chef",
-  "Construção",
-  "Marketing",
-  "Tecnologia",
-];
-
-const REGION_FILTERS = [
-  "Todas as Regiões",
-  "América do Sul",
-  "América Central",
-  "Europa",
-  "Ásia",
-  "Oceania",
-  "África",
-];
-
-const HOST_TYPE_FILTERS = [
-  "Todos",
-  "Hotel",
-  "Fazendas",
-  "ONG's",
-  "Restaurantes",
-  "Santuário",
-];
+const SKILL_FILTER_KEYS = ["Todos", "Ensino", "Agricultura", "Chef", "Construção", "Marketing", "Tecnologia"];
+const REGION_FILTER_KEYS = ["Todas as Regiões", "América do Sul", "América Central", "Europa", "Ásia", "Oceania", "África"];
+const HOST_TYPE_FILTER_KEYS = ["Todos", "Hotel", "Fazendas", "ONG's", "Restaurantes", "Santuário"];
 
 // ---------------------------------------------------------------------------
 // PostCard — adaptive layout based on image orientation
@@ -81,6 +57,7 @@ function PostCard({
   onDelete: (id: string) => void;
   onEdit: (post: any) => void;
 }) {
+  const { t } = useTranslation();
   const [showMenu, setShowMenu] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(post.likes_count || 0);
@@ -88,7 +65,6 @@ function PostCard({
   const navigate = useNavigate();
   const isOwner = currentUserId === post.author_id;
 
-  // Check if current user already liked this post
   useEffect(() => {
     if (!currentUserId) return;
     supabase
@@ -127,7 +103,6 @@ function PostCard({
     }
   };
 
-  // Close menu on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
@@ -151,12 +126,7 @@ function PostCard({
     </div>
   );
 
-  // Determine role badge (mock — in future, fetch from user_roles)
-  // For now we don't have role data on posts, so we skip the badge
-  // unless we add it to the query later
-
   const handleCardClick = (e: React.MouseEvent) => {
-    // Don't navigate if clicking on interactive elements
     const target = e.target as HTMLElement;
     if (target.closest("button") || target.closest("a")) return;
     navigate(`/community/post/${post.id}`);
@@ -169,7 +139,6 @@ function PostCard({
     >
       {/* Header + Text section */}
       <div className="border-b border-gray-200 p-4 space-y-4">
-        {/* Author row */}
         <div className="flex items-center gap-3">
           {authorAvatar}
           <div className="flex-1 min-w-0">
@@ -181,7 +150,6 @@ function PostCard({
               >
                 {post.profiles?.full_name || "Usuário"}
               </Link>
-              {/* Role badge placeholder — could be enhanced with real role data */}
             </div>
             {post.location && (
               <p className="text-[10px] text-[#6a7282] flex items-center gap-1 mt-1">
@@ -190,7 +158,7 @@ function PostCard({
               </p>
             )}
             <p className="text-[10px] text-[#6a7282] mt-0.5">
-              {new Date(post.created_at).toLocaleDateString("pt-BR", {
+              {new Date(post.created_at).toLocaleDateString(undefined, {
                 day: "numeric",
                 month: "long",
                 year: "numeric",
@@ -212,14 +180,14 @@ function PostCard({
                     className="w-full text-left px-4 py-2 text-sm text-[#1e2939] hover:bg-gray-50 flex items-center gap-2"
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                    Editar
+                    {t("common.edit")}
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); setShowMenu(false); onDelete(post.id); }}
                     className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
-                    Excluir
+                    {t("common.delete")}
                   </button>
                 </div>
               )}
@@ -227,7 +195,6 @@ function PostCard({
           )}
         </div>
 
-        {/* Post text */}
         {post.content && (
           <p className="text-base text-[#364153] leading-normal whitespace-pre-line">
             {post.content}
@@ -235,7 +202,6 @@ function PostCard({
         )}
       </div>
 
-      {/* Image — full width, fixed height, object-cover (Figma: ~384px) */}
       {post.image_url && (
         <div className="w-full h-[384px]">
           <img
@@ -246,7 +212,6 @@ function PostCard({
         </div>
       )}
 
-      {/* Hashtags row */}
       {post.tags && post.tags.length > 0 && (
         <div className="flex items-center gap-4 px-4 py-2.5 text-sm text-[#155dfc]">
           {post.tags.map((tag: string, i: number) => (
@@ -255,7 +220,6 @@ function PostCard({
         </div>
       )}
 
-      {/* Footer — likes, comments, share */}
       <div className="border-t border-gray-200 flex items-center justify-between px-4 h-[57px]">
         <div className="flex items-center gap-4">
           <button
@@ -305,30 +269,28 @@ function TabFeed({
   onEditPost: (post: any) => void;
   followingCount: number;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-tc-text-primary">
-            Feed da Comunidade
+            {t("community.feed.title")}
           </h2>
           <p className="text-sm text-tc-text-hint mt-1">
-            Conecte-se com anfitriões e viajantes e interaja com pessoas de
-            todo o mundo!
+            {t("community.feed.desc")}
           </p>
         </div>
         <button className="flex items-center gap-4 px-4 py-3 rounded-[10px] bg-navy-500/10 text-navy-500 text-sm hover:bg-navy-500/20 transition-colors">
           <Heart className="h-4 w-4" />
-          Seguindo ({followingCount})
+          {t("community.feed.following", { count: followingCount })}
         </button>
       </div>
 
-      {/* Real posts from Supabase */}
       {loadingPosts && (
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
-          <span className="ml-2 text-sm text-tc-text-hint">Carregando publicações...</span>
+          <span className="ml-2 text-sm text-tc-text-hint">{t("community.feed.loading")}</span>
         </div>
       )}
 
@@ -348,11 +310,10 @@ function TabFeed({
 
       {!loadingPosts && posts.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-tc-text-hint text-sm">Nenhuma publicação encontrada.</p>
+          <p className="text-tc-text-hint text-sm">{t("community.feed.none")}</p>
         </div>
       )}
 
-      {/* FAB */}
       <button
         onClick={onOpenCreatePost}
         className="fixed bottom-8 right-8 w-[60px] h-[60px] rounded-full bg-navy-500 text-white shadow-[0_4px_4px_rgba(0,0,0,0.25)] flex items-center justify-center hover:bg-navy-600 transition-colors z-50"
@@ -368,12 +329,33 @@ function TabFeed({
 // ---------------------------------------------------------------------------
 
 function TabViajantes() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedSkill, setSelectedSkill] = useState("Todos");
-  const [selectedRegion, setSelectedRegion] = useState("Todas as Regiões");
+  const [selectedSkill, setSelectedSkill] = useState(SKILL_FILTER_KEYS[0]);
+  const [selectedRegion, setSelectedRegion] = useState(REGION_FILTER_KEYS[0]);
   const [travelers, setTravelers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const skillLabels: Record<string, string> = {
+    "Todos": t("community.travelers.all"),
+    "Ensino": t("community.filters.teaching"),
+    "Agricultura": t("community.filters.agriculture"),
+    "Chef": "Chef",
+    "Construção": t("community.filters.construction"),
+    "Marketing": "Marketing",
+    "Tecnologia": t("community.filters.technology"),
+  };
+
+  const regionLabels: Record<string, string> = {
+    "Todas as Regiões": t("community.travelers.allRegions"),
+    "América do Sul": t("community.filters.southAmerica"),
+    "América Central": t("community.filters.centralAmerica"),
+    "Europa": t("community.filters.europe"),
+    "Ásia": t("community.filters.asia"),
+    "Oceania": t("community.filters.oceania"),
+    "África": t("community.filters.africa"),
+  };
 
   useEffect(() => {
     const fetchTravelers = async () => {
@@ -398,29 +380,27 @@ function TabViajantes() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-tc-text-primary">
-            Descobrir Comunidade
+            {t("community.title")}
           </h2>
           <p className="text-sm text-tc-text-hint mt-1">
-            Conecte-se com viajantes e anfitriões do mundo todo
+            {t("community.subtitle")}
           </p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-rose-500 text-sm font-medium hover:bg-rose-50 transition-colors">
           <Heart className="h-4 w-4" />
-          Seguindo (0)
+          {t("community.feed.following", { count: 0 })}
         </button>
       </div>
 
-      {/* Search + Filter */}
       <div className="flex items-center gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tc-text-hint" />
           <input
             type="text"
-            placeholder="Buscar viajantes..."
+            placeholder={t("community.travelers.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-white text-sm text-tc-text-primary placeholder:text-tc-text-hint focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500"
@@ -434,16 +414,15 @@ function TabViajantes() {
           className="px-5 py-2.5 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors flex items-center gap-2"
         >
           <Filter className="h-4 w-4" />
-          Filtros
+          {t("common.filters")}
         </button>
       </div>
 
-      {/* Filters panel */}
       {showFilters && (
         <div className="border border-border rounded-xl p-5 bg-white space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-tc-text-primary">
-              Filtros Avançados
+              {t("community.travelers.advancedFilters")}
             </h3>
             <button
               onClick={() => setShowFilters(false)}
@@ -453,13 +432,12 @@ function TabViajantes() {
             </button>
           </div>
 
-          {/* Habilidades */}
           <div>
             <p className="text-sm font-medium text-tc-text-primary mb-2">
-              Habilidades
+              {t("community.travelers.skills")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {SKILL_FILTERS.map((skill) => (
+              {SKILL_FILTER_KEYS.map((skill) => (
                 <button
                   key={skill}
                   onClick={() => setSelectedSkill(skill)}
@@ -469,19 +447,18 @@ function TabViajantes() {
                       : "bg-white border border-border text-tc-text-secondary hover:border-rose-300"
                   }`}
                 >
-                  {skill}
+                  {skillLabels[skill] ?? skill}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Regiao */}
           <div>
             <p className="text-sm font-medium text-tc-text-primary mb-2">
-              Região
+              {t("community.travelers.region")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {REGION_FILTERS.map((region) => (
+              {REGION_FILTER_KEYS.map((region) => (
                 <button
                   key={region}
                   onClick={() => setSelectedRegion(region)}
@@ -491,7 +468,7 @@ function TabViajantes() {
                       : "bg-white border border-border text-tc-text-secondary hover:border-rose-300"
                   }`}
                 >
-                  {region}
+                  {regionLabels[region] ?? region}
                 </button>
               ))}
             </div>
@@ -499,22 +476,19 @@ function TabViajantes() {
         </div>
       )}
 
-      {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
-          <span className="ml-2 text-sm text-tc-text-hint">Carregando viajantes...</span>
+          <span className="ml-2 text-sm text-tc-text-hint">{t("community.travelers.loading")}</span>
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && travelers.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-tc-text-hint text-sm">Nenhum viajante encontrado</p>
+          <p className="text-tc-text-hint text-sm">{t("community.travelers.none")}</p>
         </div>
       )}
 
-      {/* Traveler grid */}
       {!loading && travelers.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {travelers.map((traveler) => (
@@ -524,7 +498,6 @@ function TabViajantes() {
               className="block group"
             >
               <div className="rounded-xl overflow-hidden border border-border bg-white">
-                {/* Cover photo with overlay */}
                 <div className="relative aspect-[3/4]">
                   {traveler.avatar ? (
                     <img
@@ -539,7 +512,6 @@ function TabViajantes() {
                     </div>
                   )}
 
-                  {/* Bottom overlay gradient */}
                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pt-20 pb-4 px-4">
                     <p className="text-white font-bold text-base">
                       {traveler.name}
@@ -547,12 +519,11 @@ function TabViajantes() {
                   </div>
                 </div>
 
-                {/* Below image info */}
                 <div className="p-3 space-y-2">
                   <div className="flex items-center gap-3 text-xs text-tc-text-secondary">
                     <span className="flex items-center gap-1">
                       <User className="h-3.5 w-3.5" />
-                      Viajante
+                      {t("community.travelerRole")}
                     </span>
                   </div>
                 </div>
@@ -570,17 +541,36 @@ function TabViajantes() {
 // ---------------------------------------------------------------------------
 
 function TabAnfitrioes() {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedHostType, setSelectedHostType] = useState("Todos");
-  const [selectedRegion, setSelectedRegion] = useState("Todas as Regiões");
+  const [selectedHostType, setSelectedHostType] = useState(HOST_TYPE_FILTER_KEYS[0]);
+  const [selectedRegion, setSelectedRegion] = useState(REGION_FILTER_KEYS[0]);
   const [hosts, setHosts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const hostTypeLabels: Record<string, string> = {
+    "Todos": t("community.hosts.all"),
+    "Hotel": t("community.filters.hotel"),
+    "Fazendas": t("community.filters.farms"),
+    "ONG's": t("community.filters.ngos"),
+    "Restaurantes": t("community.filters.restaurants"),
+    "Santuário": t("community.filters.sanctuary"),
+  };
+
+  const regionLabels: Record<string, string> = {
+    "Todas as Regiões": t("community.travelers.allRegions"),
+    "América do Sul": t("community.filters.southAmerica"),
+    "América Central": t("community.filters.centralAmerica"),
+    "Europa": t("community.filters.europe"),
+    "Ásia": t("community.filters.asia"),
+    "Oceania": t("community.filters.oceania"),
+    "África": t("community.filters.africa"),
+  };
 
   useEffect(() => {
     const fetchHosts = async () => {
       setLoading(true);
-      // Get org IDs that belong to actual hosts (buyer role)
       const { data: buyerProfiles } = await supabase
         .from("user_roles")
         .select("user_id, profiles!inner(organization_id)")
@@ -619,29 +609,27 @@ function TabAnfitrioes() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-tc-text-primary">
-            Descobrir Comunidade
+            {t("community.title")}
           </h2>
           <p className="text-sm text-tc-text-hint mt-1">
-            Conecte-se com viajantes e anfitriões do mundo todo
+            {t("community.subtitle")}
           </p>
         </div>
         <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border text-rose-500 text-sm font-medium hover:bg-rose-50 transition-colors">
           <Heart className="h-4 w-4" />
-          Seguindo (0)
+          {t("community.feed.following", { count: 0 })}
         </button>
       </div>
 
-      {/* Search + Filter */}
       <div className="flex items-center gap-3">
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tc-text-hint" />
           <input
             type="text"
-            placeholder="Buscar anfitriões..."
+            placeholder={t("community.hosts.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-white text-sm text-tc-text-primary placeholder:text-tc-text-hint focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500"
@@ -655,16 +643,15 @@ function TabAnfitrioes() {
           className="px-5 py-2.5 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors flex items-center gap-2"
         >
           <Filter className="h-4 w-4" />
-          Filtros
+          {t("common.filters")}
         </button>
       </div>
 
-      {/* Filters panel */}
       {showFilters && (
         <div className="border border-border rounded-xl p-5 bg-white space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold text-tc-text-primary">
-              Filtros Avançados
+              {t("community.travelers.advancedFilters")}
             </h3>
             <button
               onClick={() => setShowFilters(false)}
@@ -674,13 +661,12 @@ function TabAnfitrioes() {
             </button>
           </div>
 
-          {/* Tipo de Anfitriao */}
           <div>
             <p className="text-sm font-medium text-tc-text-primary mb-2">
-              Tipo de Anfitrião
+              {t("community.hosts.hostType")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {HOST_TYPE_FILTERS.map((type) => (
+              {HOST_TYPE_FILTER_KEYS.map((type) => (
                 <button
                   key={type}
                   onClick={() => setSelectedHostType(type)}
@@ -690,19 +676,18 @@ function TabAnfitrioes() {
                       : "bg-white border border-border text-tc-text-secondary hover:border-rose-300"
                   }`}
                 >
-                  {type}
+                  {hostTypeLabels[type] ?? type}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Regiao */}
           <div>
             <p className="text-sm font-medium text-tc-text-primary mb-2">
-              Região
+              {t("community.travelers.region")}
             </p>
             <div className="flex flex-wrap gap-2">
-              {REGION_FILTERS.map((region) => (
+              {REGION_FILTER_KEYS.map((region) => (
                 <button
                   key={region}
                   onClick={() => setSelectedRegion(region)}
@@ -712,7 +697,7 @@ function TabAnfitrioes() {
                       : "bg-white border border-border text-tc-text-secondary hover:border-rose-300"
                   }`}
                 >
-                  {region}
+                  {regionLabels[region] ?? region}
                 </button>
               ))}
             </div>
@@ -720,22 +705,19 @@ function TabAnfitrioes() {
         </div>
       )}
 
-      {/* Loading */}
       {loading && (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-rose-500" />
-          <span className="ml-2 text-sm text-tc-text-hint">Carregando anfitriões...</span>
+          <span className="ml-2 text-sm text-tc-text-hint">{t("community.hosts.loading")}</span>
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && hosts.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-tc-text-hint text-sm">Nenhum anfitrião encontrado</p>
+          <p className="text-tc-text-hint text-sm">{t("community.hosts.none")}</p>
         </div>
       )}
 
-      {/* Host grid */}
       {!loading && hosts.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {hosts.map((host) => (
@@ -743,7 +725,6 @@ function TabAnfitrioes() {
               key={host.id}
               className="rounded-xl overflow-hidden border border-border bg-white"
             >
-              {/* Cover photo */}
               <div className="relative aspect-video bg-gradient-to-br from-navy-100 to-navy-200 flex items-center justify-center">
                 {host.logo_url ? (
                   <img
@@ -757,7 +738,6 @@ function TabAnfitrioes() {
                 )}
               </div>
 
-              {/* Content below image */}
               <div className="p-4 space-y-3">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-bold text-tc-text-primary text-base">
@@ -778,19 +758,18 @@ function TabAnfitrioes() {
                   </p>
                 )}
 
-                {/* Buttons */}
                 <div className="flex items-center gap-2 pt-1">
                   <Link
                     to={`/community/hosts/${host.id}`}
                     className="flex-1 py-2 rounded-lg border border-border bg-white text-tc-text-primary text-sm font-medium text-center hover:bg-gray-50 transition-colors"
                   >
-                    Ver Perfil
+                    {t("community.hosts.viewProfile")}
                   </Link>
                   <button
                     className="flex-1 py-2 rounded-lg text-white text-sm font-medium flex items-center justify-center gap-1.5 transition-colors bg-navy-500 hover:bg-navy-600"
                   >
                     <Heart className="h-4 w-4" />
-                    Seguir
+                    {t("common.follow")}
                   </button>
                 </div>
               </div>
@@ -807,13 +786,13 @@ function TabAnfitrioes() {
 // ---------------------------------------------------------------------------
 
 export default function Community() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>("feed");
   const [showCreatePost, setShowCreatePost] = useState(false);
   const [posts, setPosts] = useState<any[]>([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
 
-  // Edit post state
   const [editingPost, setEditingPost] = useState<any | null>(null);
   const [editCaption, setEditCaption] = useState("");
   const [editLocation, setEditLocation] = useState("");
@@ -853,15 +832,15 @@ export default function Community() {
   };
 
   const handleDeletePost = async (postId: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir esta publicação?")) return;
+    if (!window.confirm(t("community.feed.deleteConfirm"))) return;
     const { error } = await supabase
       .from("community_posts")
       .delete()
       .eq("id", postId);
     if (error) {
-      toast.error("Erro ao excluir publicação.");
+      toast.error(t("community.feed.deleteError"));
     } else {
-      toast.success("Publicação excluída!");
+      toast.success(t("community.feed.deleted"));
       setPosts((prev) => prev.filter((p) => p.id !== postId));
     }
   };
@@ -880,9 +859,9 @@ export default function Community() {
       .update({ content: editCaption, location: editLocation || null })
       .eq("id", editingPost.id);
     if (error) {
-      toast.error("Erro ao atualizar publicação.");
+      toast.error(t("community.feed.updateError"));
     } else {
-      toast.success("Publicação atualizada!");
+      toast.success(t("community.feed.updated"));
       setPosts((prev) =>
         prev.map((p) =>
           p.id === editingPost.id
@@ -898,17 +877,17 @@ export default function Community() {
   const tabs: { key: TabKey; label: string; icon: React.ReactNode }[] = [
     {
       key: "feed",
-      label: "Feed",
+      label: t("community.tabs.feed"),
       icon: <List className="h-4 w-4" />,
     },
     {
       key: "viajantes",
-      label: "Viajantes",
+      label: t("community.tabs.travelers"),
       icon: <Globe className="h-4 w-4" />,
     },
     {
       key: "anfitrioes",
-      label: "Anfitriões",
+      label: t("community.tabs.hosts"),
       icon: <User className="h-4 w-4" />,
     },
   ];
@@ -950,7 +929,6 @@ export default function Community() {
         {activeTab === "anfitrioes" && <TabAnfitrioes />}
       </div>
 
-      {/* Create Post Modal */}
       <CreatePostModal
         open={showCreatePost}
         onClose={() => { setShowCreatePost(false); fetchPosts(); }}
@@ -960,7 +938,7 @@ export default function Community() {
       <Dialog open={!!editingPost} onOpenChange={(v) => !v && setEditingPost(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Editar Publicação</DialogTitle>
+            <DialogTitle>{t("community.feed.editPost")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             {editingPost?.image_url && (
@@ -973,7 +951,7 @@ export default function Community() {
               </div>
             )}
             <div className="space-y-2">
-              <label className="text-sm font-medium">Legenda</label>
+              <label className="text-sm font-medium">{t("community.feed.caption")}</label>
               <textarea
                 value={editCaption}
                 onChange={(e) => {
@@ -983,19 +961,19 @@ export default function Community() {
                 className="w-full px-4 py-3 rounded-lg border border-border bg-white text-sm text-tc-text-primary focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500 resize-none"
               />
               <p className="text-xs text-tc-text-hint text-right">
-                {editCaption.length}/500 caracteres
+                {editCaption.length}/500 {t("community.characters")}
               </p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-tc-text-hint" />
-                Localização
+                {t("community.feed.location")}
               </label>
               <input
                 type="text"
                 value={editLocation}
                 onChange={(e) => setEditLocation(e.target.value)}
-                placeholder="Localização..."
+                placeholder={t("community.feed.locationPlaceholder")}
                 className="w-full px-4 py-2.5 rounded-lg border border-border bg-white text-sm text-tc-text-primary focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500"
               />
             </div>
@@ -1004,7 +982,7 @@ export default function Community() {
                 onClick={() => setEditingPost(null)}
                 className="py-2.5 rounded-lg border border-border text-sm font-medium hover:bg-gray-50 transition-colors"
               >
-                Cancelar
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleSaveEdit}
@@ -1012,7 +990,7 @@ export default function Community() {
                 className="py-2.5 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 {savingEdit && <Loader2 className="h-4 w-4 animate-spin" />}
-                Salvar
+                {t("common.save")}
               </button>
             </div>
           </div>

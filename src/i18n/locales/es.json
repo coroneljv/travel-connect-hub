@@ -515,7 +515,26 @@
       "loading": "Cargando anfitriones...",
       "none": "No se encontraron anfitriones",
       "viewProfile": "Ver Perfil"
-    }
+    },
+    "filters": {
+      "teaching": "Enseñanza",
+      "agriculture": "Agricultura",
+      "construction": "Construcción",
+      "technology": "Tecnología",
+      "southAmerica": "América del Sur",
+      "centralAmerica": "América Central",
+      "europe": "Europa",
+      "asia": "Asia",
+      "oceania": "Oceanía",
+      "africa": "África",
+      "hotel": "Hotel",
+      "farms": "Granjas",
+      "ngos": "ONG's",
+      "restaurants": "Restaurantes",
+      "sanctuary": "Santuario"
+    },
+    "travelerRole": "Viajero",
+    "characters": "caracteres"
   },
   "academy": {
     "title": "Academia",
@@ -537,6 +556,13 @@
     "enrolledCourses": "Cursos Inscritos",
     "modules": "{{count}} módulos",
     "progress": "Progreso",
+    "noDescription": "Sin descripción",
+    "hero": {
+      "travelerTitle": "Carrera Profesional en Hospitalidad",
+      "travelerDesc": "Desarrolla habilidades profesionales en hospitalidad y destácate en el mercado. Aprende de los mejores expertos del sector.",
+      "hostTitle": "Cómo Crear Experiencias Únicas para Viajeros",
+      "hostDesc": "Aprende técnicas y estrategias para transformar tu hostel en una experiencia inolvidable para viajeros de todo el mundo."
+    },
     "host": {
       "shareKnowledge": "¡Comparte tu conocimiento!",
       "shareKnowledgeDesc": "Crea cursos y comparte tu experiencia con viajeros y anfitriones de todo el mundo. Monetiza tu conocimiento.",

@@ -515,7 +515,26 @@
       "loading": "Loading hosts...",
       "none": "No hosts found",
       "viewProfile": "View Profile"
-    }
+    },
+    "filters": {
+      "teaching": "Teaching",
+      "agriculture": "Agriculture",
+      "construction": "Construction",
+      "technology": "Technology",
+      "southAmerica": "South America",
+      "centralAmerica": "Central America",
+      "europe": "Europe",
+      "asia": "Asia",
+      "oceania": "Oceania",
+      "africa": "Africa",
+      "hotel": "Hotel",
+      "farms": "Farms",
+      "ngos": "NGOs",
+      "restaurants": "Restaurants",
+      "sanctuary": "Sanctuary"
+    },
+    "travelerRole": "Traveler",
+    "characters": "characters"
   },
   "academy": {
     "title": "Academy",
@@ -537,6 +556,13 @@
     "enrolledCourses": "Enrolled Courses",
     "modules": "{{count}} modules",
     "progress": "Progress",
+    "noDescription": "No description",
+    "hero": {
+      "travelerTitle": "Professional Hospitality Path",
+      "travelerDesc": "Develop professional hospitality skills and stand out in the market. Learn from the best industry experts.",
+      "hostTitle": "How to Create Unique Experiences for Travelers",
+      "hostDesc": "Learn techniques and strategies to transform your hostel into an unforgettable experience for travelers from around the world."
+    },
     "host": {
       "shareKnowledge": "Share your knowledge!",
       "shareKnowledgeDesc": "Create courses and share your experience with travelers and hosts worldwide. Monetize your knowledge.",

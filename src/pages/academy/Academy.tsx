@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { dbRoleToUIRole } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
+import { useTranslation } from "react-i18next";
 import {
   Search,
   Play,
@@ -142,6 +143,7 @@ function CourseCard({
   course: CourseCardData;
   showProgress?: boolean;
 }) {
+  const { t } = useTranslation();
   return (
     <Link to={`/academy/courses/${course.id}`} className="block group">
       <Card className="overflow-hidden border border-border hover:shadow-lg transition-shadow">
@@ -163,9 +165,7 @@ function CourseCard({
           </h3>
           <p className="text-xs text-tc-text-hint">{course.author}</p>
           <div className="flex items-center gap-2 text-xs text-tc-text-secondary">
-            <span>
-              {course.modules} módulos
-            </span>
+            <span>{t("academy.modules", { count: course.modules })}</span>
             <span className="text-tc-text-hint">-</span>
             <span>{course.hours}h</span>
             <span className="text-tc-text-hint">-</span>
@@ -175,13 +175,13 @@ function CourseCard({
             <RatingStars rating={course.rating} />
             <span className="text-xs text-tc-text-hint flex items-center gap-1">
               <Users className="h-3 w-3" />
-              {course.students.toLocaleString("pt-BR")}
+              {course.students.toLocaleString()}
             </span>
           </div>
           {showProgress && course.progress > 0 && (
             <div className="pt-1 space-y-1">
               <div className="flex items-center justify-between text-xs text-tc-text-hint">
-                <span>Progresso</span>
+                <span>{t("academy.progress")}</span>
                 <span>{course.progress}%</span>
               </div>
               <Progress value={course.progress} className="h-1.5" />
@@ -219,13 +219,11 @@ function useAllCourses() {
 
       const courseIds = rows.map((r: CourseRow) => r.id);
 
-      // Fetch modules counts
       const { data: modulesData } = await supabase
         .from("course_modules")
         .select("id, course_id")
         .in("course_id", courseIds);
 
-      // Fetch lessons counts
       const moduleIds = (modulesData || []).map((m: { id: string }) => m.id);
       let lessonsData: { id: string; module_id: string }[] = [];
       if (moduleIds.length > 0) {
@@ -236,7 +234,6 @@ function useAllCourses() {
         lessonsData = data || [];
       }
 
-      // Build counts per course
       const modulesPerCourse: Record<string, number> = {};
       const lessonsPerCourse: Record<string, number> = {};
       const moduleIdToCourseId: Record<string, string> = {};
@@ -275,18 +272,19 @@ function TabDescobrir({
 }: {
   uiRole: "viajante" | "anfitriao" | null;
 }) {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState("");
   const { courses, loading } = useAllCourses();
 
   const heroTitle =
     uiRole === "viajante"
-      ? "Trilha Profissional de Hospitalidade"
-      : "Como Criar Experiências Únicas para Viajantes";
+      ? t("academy.hero.travelerTitle")
+      : t("academy.hero.hostTitle");
 
   const heroDescription =
     uiRole === "viajante"
-      ? "Desenvolva habilidades profissionais em hospitalidade e destaque-se no mercado. Aprenda com os melhores especialistas do setor."
-      : "Aprenda técnicas e estratégias para transformar seu hostel em uma experiência inesquecível para viajantes de todo o mundo.";
+      ? t("academy.hero.travelerDesc")
+      : t("academy.hero.hostDesc");
 
   const heroCourse = courses.length > 0 ? courses[0] : null;
 
@@ -303,7 +301,6 @@ function TabDescobrir({
         />
         <div className="absolute inset-0 bg-gradient-to-r from-navy-800/95 via-navy-700/80 to-transparent" />
         <div className="relative z-10 flex flex-col justify-center h-full px-8 max-w-2xl">
-          {/* Tags */}
           <div className="flex flex-wrap gap-2 mb-3">
             {heroCourse ? (
               heroCourse.tags.map((tag) => <TagBadge key={tag} label={tag} />)
@@ -314,21 +311,17 @@ function TabDescobrir({
               </>
             )}
           </div>
-          {/* Course info */}
           {heroCourse && (
             <p className="text-white/70 text-sm mb-1">
-              {heroCourse.modules} módulos - {heroCourse.hours} horas
+              {t("academy.modules", { count: heroCourse.modules })} - {heroCourse.hours}h
             </p>
           )}
-          {/* Title */}
           <h1 className="text-3xl font-bold text-white mb-2 leading-tight">
             {heroCourse ? heroCourse.title : heroTitle}
           </h1>
-          {/* Description */}
           <p className="text-white/80 text-sm mb-4 line-clamp-3">
             {heroDescription}
           </p>
-          {/* Buttons */}
           {heroCourse && (
             <div className="flex items-center gap-3 mb-4">
               <Link
@@ -336,14 +329,14 @@ function TabDescobrir({
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-navy-500 text-white font-medium text-sm hover:bg-navy-600 transition-colors"
               >
                 <Play className="h-4 w-4" />
-                Comecar Curso
+                {t("academy.startCourse")}
               </Link>
               <Link
                 to={`/academy/courses/${heroCourse.id}`}
                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-500/80 text-white font-medium text-sm hover:bg-rose-500 transition-colors"
               >
                 <Info className="h-4 w-4" />
-                Mais Informações
+                {t("academy.moreInfo")}
               </Link>
             </div>
           )}
@@ -356,7 +349,7 @@ function TabDescobrir({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tc-text-hint" />
           <input
             type="text"
-            placeholder="Buscar cursos, trilhas ou temas..."
+            placeholder={t("academy.searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-border bg-white text-sm text-tc-text-primary placeholder:text-tc-text-placeholder focus:outline-none focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500"
@@ -364,7 +357,7 @@ function TabDescobrir({
         </div>
         <button className="px-5 py-2.5 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors flex items-center gap-2">
           <Search className="h-4 w-4" />
-          Buscar
+          {t("common.search")}
         </button>
         {uiRole === "viajante" && (
           <Link
@@ -375,26 +368,26 @@ function TabDescobrir({
             className="px-5 py-2.5 rounded-lg bg-rose-500 text-white text-sm font-medium hover:bg-rose-600 transition-colors flex items-center gap-2"
           >
             <BookOpen className="h-4 w-4" />
-            Meus Cursos
+            {t("academy.tabs.myCourses")}
           </Link>
         )}
       </div>
 
-      {/* Section title */}
+      {/* Course section */}
       {courses.length === 0 ? (
-        <EmptyState message="Nenhum curso disponível" />
+        <EmptyState message={t("academy.noCourses")} />
       ) : uiRole === "anfitriao" ? (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
               <Grid3X3 className="h-5 w-5 text-rose-500" />
-              Categorias
+              {t("academy.categories")}
             </h2>
             <Link
               to="/academy"
               className="text-sm text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1"
             >
-              Ver todas
+              {t("common.viewAll")}
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -409,13 +402,13 @@ function TabDescobrir({
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
               <Play className="h-5 w-5 text-rose-500" />
-              Cursos Disponiveis
+              {t("academy.availableCourses")}
             </h2>
             <Link
               to="/academy"
               className="text-sm text-rose-500 hover:text-rose-600 font-medium flex items-center gap-1"
             >
-              Ver todos
+              {t("common.viewAllM")}
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -434,6 +427,7 @@ function TabDescobrir({
 /*  TAB: Meus Cursos (Anfitriao)                                       */
 /* ================================================================== */
 function MeusCursosAnfitriao() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [courses, setCourses] = useState<CourseRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -468,17 +462,16 @@ function MeusCursosAnfitriao() {
       <div className="relative rounded-xl overflow-hidden bg-gradient-to-r from-navy-700 to-navy-500 p-8">
         <div className="max-w-xl">
           <h2 className="text-2xl font-bold text-white mb-2">
-            Compartilhe seu conhecimento!
+            {t("academy.host.shareKnowledge")}
           </h2>
           <p className="text-white/80 text-sm mb-4">
-            Crie cursos e compartilhe sua experiência com viajantes e anfitriões
-            de todo o mundo. Monetize seu conhecimento.
+            {t("academy.host.shareKnowledgeDesc")}
           </p>
           <Link
             to="/academy/create"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-rose-500 text-white font-medium text-sm hover:bg-rose-600 transition-colors"
           >
-            + Criar Novo Curso
+            {t("academy.host.createCourse")}
           </Link>
         </div>
       </div>
@@ -491,7 +484,7 @@ function MeusCursosAnfitriao() {
               <Users className="h-6 w-6 text-navy-500" />
             </div>
             <div>
-              <p className="text-sm text-tc-text-hint">Total de Alunos</p>
+              <p className="text-sm text-tc-text-hint">{t("academy.host.totalStudents")}</p>
               <p className="text-2xl font-bold text-tc-text-primary">0</p>
             </div>
           </CardContent>
@@ -502,7 +495,7 @@ function MeusCursosAnfitriao() {
               <BookOpen className="h-6 w-6 text-rose-500" />
             </div>
             <div>
-              <p className="text-sm text-tc-text-hint">Cursos Publicados</p>
+              <p className="text-sm text-tc-text-hint">{t("academy.host.publishedCourses")}</p>
               <p className="text-2xl font-bold text-tc-text-primary">
                 {courses.length}
               </p>
@@ -515,7 +508,7 @@ function MeusCursosAnfitriao() {
               <DollarSign className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-tc-text-hint">Receita Total</p>
+              <p className="text-sm text-tc-text-hint">{t("academy.host.totalRevenue")}</p>
               <p className="text-2xl font-bold text-tc-text-primary">
                 R$ 0,00
               </p>
@@ -528,7 +521,7 @@ function MeusCursosAnfitriao() {
               <Star className="h-6 w-6 text-yellow-500" />
             </div>
             <div>
-              <p className="text-sm text-tc-text-hint">Avaliação Média</p>
+              <p className="text-sm text-tc-text-hint">{t("academy.host.avgRating")}</p>
               <p className="text-2xl font-bold text-tc-text-primary">--</p>
             </div>
           </CardContent>
@@ -538,10 +531,10 @@ function MeusCursosAnfitriao() {
       {/* Course list */}
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-tc-text-primary">
-          Seus Cursos
+          {t("academy.host.yourCourses")}
         </h3>
         {courses.length === 0 ? (
-          <EmptyState message="Você ainda não criou nenhum curso" />
+          <EmptyState message={t("academy.host.noCoursesYet")} />
         ) : (
           courses.map((course) => (
             <Card key={course.id} className="overflow-hidden">
@@ -559,7 +552,7 @@ function MeusCursosAnfitriao() {
                       {course.title}
                     </h4>
                     <p className="text-sm text-tc-text-hint mb-2">
-                      {course.subtitle || "Sem descrição"}
+                      {course.subtitle || t("academy.noDescription")}
                     </p>
                     <div className="flex flex-wrap gap-4 text-sm text-tc-text-secondary mb-3">
                       <span className="flex items-center gap-1">
@@ -582,18 +575,18 @@ function MeusCursosAnfitriao() {
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-navy-500 text-white text-sm font-medium hover:bg-navy-600 transition-colors"
                     >
                       <Eye className="h-4 w-4" />
-                      Ver Detalhes
+                      {t("academy.host.viewDetails")}
                     </Link>
                     <Link
                       to={`/academy/courses/${course.id}`}
                       className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-tc-text-secondary text-sm font-medium hover:bg-gray-50 transition-colors"
                     >
                       <Edit3 className="h-4 w-4" />
-                      Editar
+                      {t("common.edit")}
                     </Link>
                     <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-border text-red-600 text-sm font-medium hover:bg-red-50 transition-colors">
                       <Trash2 className="h-4 w-4" />
-                      Excluir
+                      {t("common.delete")}
                     </button>
                   </div>
                 </CardContent>
@@ -610,28 +603,27 @@ function MeusCursosAnfitriao() {
 /*  TAB: Meus Cursos (Viajante)                                        */
 /* ================================================================== */
 function MeusCursosViajante() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8">
-      {/* Continuar Assistindo */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
             <Play className="h-5 w-5 text-rose-500" />
-            Continuar Assistindo
+            {t("academy.continueWatching")}
           </h2>
         </div>
-        <EmptyState message="Você ainda não está matriculado em nenhum curso" />
+        <EmptyState message={t("academy.notEnrolled")} />
       </div>
 
-      {/* Cursos matriculados */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
             <BookOpen className="h-5 w-5 text-rose-500" />
-            Cursos Matriculados
+            {t("academy.enrolledCourses")}
           </h2>
         </div>
-        <EmptyState message="Você ainda não está matriculado em nenhum curso" />
+        <EmptyState message={t("academy.notEnrolled")} />
       </div>
     </div>
   );
@@ -641,28 +633,27 @@ function MeusCursosViajante() {
 /*  TAB: Meu Aprendizado                                               */
 /* ================================================================== */
 function TabMeuAprendizado() {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8">
-      {/* Continuar Assistindo */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
             <Play className="h-5 w-5 text-rose-500" />
-            Continuar Assistindo
+            {t("academy.continueWatching")}
           </h2>
         </div>
-        <EmptyState message="Você ainda não está matriculado em nenhum curso" />
+        <EmptyState message={t("academy.notEnrolled")} />
       </div>
 
-      {/* Finalizados */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-tc-text-primary flex items-center gap-2">
             <Award className="h-5 w-5 text-green-600" />
-            Finalizados
+            {t("academy.completed")}
           </h2>
         </div>
-        <EmptyState message="Você ainda não finalizou nenhum curso" />
+        <EmptyState message={t("academy.noCompleted")} />
       </div>
     </div>
   );
@@ -672,14 +663,15 @@ function TabMeuAprendizado() {
 /*  Main Academy Page                                                  */
 /* ================================================================== */
 export default function Academy() {
+  const { t } = useTranslation();
   const { userRole } = useAuth();
   const uiRole = userRole ? dbRoleToUIRole(userRole) : null;
   const [activeTab, setActiveTab] = useState<TabKey>("descobrir");
 
   const tabs: { key: TabKey; label: string }[] = [
-    { key: "descobrir", label: "Descobrir" },
-    { key: "meus-cursos", label: "Meus Cursos" },
-    { key: "meu-aprendizado", label: "Meu Aprendizado" },
+    { key: "descobrir", label: t("academy.tabs.discover") },
+    { key: "meus-cursos", label: t("academy.tabs.myCourses") },
+    { key: "meu-aprendizado", label: t("academy.tabs.myLearning") },
   ];
 
   return (
@@ -689,7 +681,7 @@ export default function Academy() {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-tc-text-primary flex items-center gap-2">
             <BookOpen className="h-6 w-6 text-rose-500" />
-            Academy
+            {t("academy.title")}
           </h1>
         </div>
 
