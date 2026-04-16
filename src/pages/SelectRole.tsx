@@ -2,8 +2,10 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { MapPin, Heart, Globe2, Building, Users, HeartHandshake, ArrowRight } from "lucide-react";
 import type { UIRole } from "@/lib/roles";
+import { useTranslation } from "react-i18next";
 
 const SelectRole = () => {
+  const { t } = useTranslation();
   const { selectRole } = useAuth();
   const navigate = useNavigate();
 
@@ -42,9 +44,9 @@ const SelectRole = () => {
 
         {/* Heading */}
         <div className="text-center flex flex-col gap-2">
-          <h1 className="text-[28px] font-semibold text-[#12100f]">Bem-vindo!</h1>
+          <h1 className="text-[28px] font-semibold text-[#12100f]">{t("selectRole.welcome")}</h1>
           <p className="text-[18px] font-normal text-[#3f444c] max-w-2xl mx-auto">
-            Conecte-se com pessoas ao redor do mundo. Escolha como você quer começar sua jornada:
+            {t("selectRole.subtitle")}
           </p>
         </div>
 
@@ -54,18 +56,18 @@ const SelectRole = () => {
           {/* ── Viajante ── */}
           <div className="flex-1 bg-white rounded-[10px] border border-[#dbdbdb] flex flex-col overflow-hidden">
             <div className="px-4 py-8 flex flex-col gap-4" style={{ background: "#364763" }}>
-              <p className="text-[28px] font-semibold leading-none text-white">Sou Viajante</p>
+              <p className="text-[28px] font-semibold leading-none text-white">{t("selectRole.traveler.title")}</p>
               <p className="text-[16px] font-normal leading-none text-white">
-                Explore o mundo e encontre experiências autênticas
+                {t("selectRole.traveler.subtitle")}
               </p>
             </div>
 
             <div className="flex flex-col gap-4 px-4 py-8 flex-1">
               <div className="flex flex-col gap-4">
                 {[
-                  { icon: MapPin, label: "Descubra Oportunidades", desc: "Experiências únicas de trabalho voluntário e hospedagem." },
-                  { icon: Heart, label: "Conecte-se com Anfitriões", desc: "Construa relacionamentos significativos ao redor do mundo." },
-                  { icon: Globe2, label: "Cresça e Aprenda", desc: "Desenvolva habilidades enquanto conhece novas culturas" },
+                  { icon: MapPin, label: t("selectRole.traveler.f1title"), desc: t("selectRole.traveler.f1desc") },
+                  { icon: Heart, label: t("selectRole.traveler.f2title"), desc: t("selectRole.traveler.f2desc") },
+                  { icon: Globe2, label: t("selectRole.traveler.f3title"), desc: t("selectRole.traveler.f3desc") },
                 ].map(({ icon: Icon, label, desc }) => (
                   <div key={label} className="flex gap-4 items-center w-full">
                     <div
@@ -87,7 +89,7 @@ const SelectRole = () => {
                 className="w-full flex items-center justify-center gap-4 py-3 rounded-[10px] text-[14px] font-normal text-white hover:opacity-90 transition-opacity mt-auto"
                 style={{ background: "#364763" }}
               >
-                Começar como Viajante
+                {t("selectRole.traveler.cta")}
                 <ArrowRight style={{ width: 16, height: 16 }} />
               </button>
             </div>
@@ -99,18 +101,18 @@ const SelectRole = () => {
               className="px-4 py-8 flex flex-col gap-4"
               style={{ background: "#cf3952", borderBottom: "1px solid #364763" }}
             >
-              <p className="text-[28px] font-semibold leading-none text-white">Sou Anfitrião</p>
+              <p className="text-[28px] font-semibold leading-none text-white">{t("selectRole.host.title")}</p>
               <p className="text-[16px] font-normal leading-none text-white">
-                Compartilhe seu espaço e receba viajantes incríveis
+                {t("selectRole.host.subtitle")}
               </p>
             </div>
 
             <div className="flex flex-col gap-4 px-4 py-8 flex-1">
               <div className="flex flex-col gap-4">
                 {[
-                  { icon: Building, label: "Crie oportunidades", desc: "Publique vagas de voluntariado e receba ajuda qualificada" },
-                  { icon: Users, label: "Receba Viajantes", desc: "Conheça pessoas de diferentes culturas e histórias" },
-                  { icon: HeartHandshake, label: "Impacte Vidas", desc: "Faça parte de experiências transformadoras" },
+                  { icon: Building, label: t("selectRole.host.f1title"), desc: t("selectRole.host.f1desc") },
+                  { icon: Users, label: t("selectRole.host.f2title"), desc: t("selectRole.host.f2desc") },
+                  { icon: HeartHandshake, label: t("selectRole.host.f3title"), desc: t("selectRole.host.f3desc") },
                 ].map(({ icon: Icon, label, desc }) => (
                   <div key={label} className="flex gap-4 items-center w-full">
                     <div
@@ -132,7 +134,7 @@ const SelectRole = () => {
                 className="w-full flex items-center justify-center gap-4 py-3 rounded-[10px] text-[14px] font-normal text-white border border-[#364763] hover:opacity-90 transition-opacity mt-auto"
                 style={{ background: "#cf3952" }}
               >
-                Começar como Anfitrião
+                {t("selectRole.host.cta")}
                 <ArrowRight style={{ width: 16, height: 16 }} />
               </button>
             </div>

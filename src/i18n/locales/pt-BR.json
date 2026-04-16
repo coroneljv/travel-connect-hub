@@ -637,6 +637,32 @@
     "welcome": "Bem-vindo!",
     "selectCountry": "Vamos começar selecionando seu país de residência atual"
   },
+  "selectRole": {
+    "welcome": "Bem-vindo!",
+    "subtitle": "Conecte-se com pessoas ao redor do mundo. Escolha como você quer começar sua jornada:",
+    "traveler": {
+      "title": "Sou Viajante",
+      "subtitle": "Explore o mundo e encontre experiências autênticas",
+      "f1title": "Descubra Oportunidades",
+      "f1desc": "Experiências únicas de trabalho voluntário e hospedagem.",
+      "f2title": "Conecte-se com Anfitriões",
+      "f2desc": "Construa relacionamentos significativos ao redor do mundo.",
+      "f3title": "Cresça e Aprenda",
+      "f3desc": "Desenvolva habilidades enquanto conhece novas culturas",
+      "cta": "Começar como Viajante"
+    },
+    "host": {
+      "title": "Sou Anfitrião",
+      "subtitle": "Compartilhe seu espaço e receba viajantes incríveis",
+      "f1title": "Crie oportunidades",
+      "f1desc": "Publique vagas de voluntariado e receba ajuda qualificada",
+      "f2title": "Receba Viajantes",
+      "f2desc": "Conheça pessoas de diferentes culturas e histórias",
+      "f3title": "Impacte Vidas",
+      "f3desc": "Faça parte de experiências transformadoras",
+      "cta": "Começar como Anfitrião"
+    }
+  },
   "countries": {
     "ZA": "África do Sul",
     "DE": "Alemanha",

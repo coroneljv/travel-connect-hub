@@ -637,6 +637,32 @@
     "welcome": "Welcome!",
     "selectCountry": "Let's start by selecting your current country of residence"
   },
+  "selectRole": {
+    "welcome": "Welcome!",
+    "subtitle": "Connect with people around the world. Choose how you want to start your journey:",
+    "traveler": {
+      "title": "I'm a Traveler",
+      "subtitle": "Explore the world and find authentic experiences",
+      "f1title": "Discover Opportunities",
+      "f1desc": "Unique volunteer work and accommodation experiences.",
+      "f2title": "Connect with Hosts",
+      "f2desc": "Build meaningful relationships around the world.",
+      "f3title": "Grow and Learn",
+      "f3desc": "Develop skills while discovering new cultures",
+      "cta": "Start as a Traveler"
+    },
+    "host": {
+      "title": "I'm a Host",
+      "subtitle": "Share your space and welcome amazing travelers",
+      "f1title": "Create Opportunities",
+      "f1desc": "Post volunteer jobs and receive qualified help",
+      "f2title": "Receive Travelers",
+      "f2desc": "Meet people from different cultures and stories",
+      "f3title": "Impact Lives",
+      "f3desc": "Be part of transformative experiences",
+      "cta": "Start as a Host"
+    }
+  },
   "countries": {
     "ZA": "South Africa",
     "DE": "Germany",
