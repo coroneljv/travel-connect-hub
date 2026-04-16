@@ -1,6 +1,8 @@
 
 import { useTranslation } from "react-i18next";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
+import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
@@ -93,6 +95,7 @@ function ViajanteDashboard({
   profileCompletion: { percent: number; missing: string[] };
 }) {
   const { t } = useTranslation();
+  const [notifOpen, setNotifOpen] = useState(false);
   const firstName = profile?.full_name?.split(" ")[0] ?? t("auth.register.viajante");
   const initials = profile?.full_name
     ? profile.full_name
@@ -207,10 +210,13 @@ function ViajanteDashboard({
                 <span className="text-[12px] font-medium text-white">5 {t("common.credits")}</span>
               </div>
             </Link>
-            <Link to="/notifications" className="relative h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors">
+            <button
+              onClick={() => setNotifOpen(true)}
+              className="relative h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors"
+            >
               <Bell className="h-5 w-5 text-[#1e2939]" />
               <span className="absolute top-2 left-[26px] h-2 w-2 rounded-full bg-[#fb2c36]" />
-            </Link>
+            </button>
             <Link to="/chat" className="relative h-11 w-11 flex items-center justify-center rounded-[14px] hover:bg-muted transition-colors">
               <MessageSquare className="h-5 w-5 text-[#1e2939]" />
               <span className="absolute top-2 left-[26px] h-2 w-2 rounded-full bg-[#fb2c36]" />
@@ -367,6 +373,7 @@ function ViajanteDashboard({
           </div>
         </div>
       </div>
+      <NotificationsModal open={notifOpen} onClose={() => setNotifOpen(false)} />
     </div>
   );
 }
@@ -390,6 +397,7 @@ function AnfitriaoDashboard({
   onSignOut: () => void;
 }) {
   const { t } = useTranslation();
+  const [notifOpen, setNotifOpen] = useState(false);
   const firstName = profile?.full_name?.split(" ")[0] ?? t("auth.register.anfitriao");
   const initials = profile?.full_name
     ? profile.full_name
@@ -442,9 +450,12 @@ function AnfitriaoDashboard({
             </div>
 
             <div className="flex items-center gap-3">
-              <Link to="/notifications" className="relative p-2 rounded-full hover:bg-muted transition-colors">
+              <button
+                onClick={() => setNotifOpen(true)}
+                className="relative p-2 rounded-full hover:bg-muted transition-colors"
+              >
                 <Bell className="h-5 w-5 text-muted-foreground" />
-              </Link>
+              </button>
               <Link to="/chat" className="relative p-2 rounded-full hover:bg-muted transition-colors">
                 <MessageSquare className="h-5 w-5 text-muted-foreground" />
               </Link>
@@ -570,6 +581,7 @@ function AnfitriaoDashboard({
           </CardContent>
         </Card>
       </div>
+      <NotificationsModal open={notifOpen} onClose={() => setNotifOpen(false)} />
     </div>
   );
 }
